@@ -375,7 +375,7 @@ memasang_notifikasi_bot() {
 <b>Automatic Notification From Installer Client...</b>
 "
   
-  local INLINE_KEYBOARD='{"inline_keyboard":[[{"text":"Telegram","url":"https://t.me/xcode001"}]]}'
+  local INLINE_KEYBOARD='{"inline_keyboard":[[{"text":"Telegram","url":"https://t.me/xcode000"}]]}'
   
   curl -s --max-time "$TIME" -d "chat_id=$CHATID&disable_web_page_preview=1&text=$TEXT&parse_mode=html&reply_markup=$INLINE_KEYBOARD" "$URL" >/dev/null
 }
@@ -1377,7 +1377,7 @@ function memasang_index_page() {
     <div class="footer">
       Semoga bermanfaat 🙏🙏🙏
       Terima kasih atas sharingnya:<br />
-      <strong>@xcode001</strong>
+      <strong>@xcode000</strong>
     </div>
   </div>
 </body>
