@@ -5,11 +5,11 @@ apt update -y && apt upgrade -y --fix-missing && apt install -y xxd bzip2 wget c
 ```
 
 ```
-screen -S setup-session bash -c "wget -q https://raw.githubusercontent.com/Ghalihx/project/main/install.sh && chmod +x install.sh && ./install.sh; read -p 'Tekan enter untuk keluar...'"
+screen -S setup-session bash -c "wget -q https://raw.githubusercontent.com/xcode000/project/main/install.sh && chmod +x install.sh && ./install.sh; read -p 'Tekan enter untuk keluar...'"
 ```
 Perintah Untuk Update Script
 ```
-wget -q https://raw.githubusercontent.com/Ghalihx/project/main/update.sh && chmod +x update.sh && ./update.sh && rm -f update.sh
+wget -q https://raw.githubusercontent.com/xcode000/project/main/update.sh && chmod +x update.sh && ./update.sh && rm -f update.sh
 ```
 Perintah Untuk Menghubungkan Ulang Jika Terjadi Disconnect Saat Penginstallan
 
