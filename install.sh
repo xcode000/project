@@ -562,7 +562,13 @@ clear
 print_install "Memasang SSHD"
 wget -q -O /etc/ssh/sshd_config "${REPO}files/sshd" > /dev/null 2>&1
 chmod 700 /etc/ssh/sshd_config
-systemctl restart ssh
+systemctl restart ssh > /dev/null 2>&1
+rm -rf /etc/security/limits.conf > /dev/null 2>&1
+wget -q -O /etc/security/limits.conf "${REPO}config/limits.conf" > /dev/null 2>&1
+rm -rf /etc/sysctl.conf > /dev/null 2>&1
+wget -q -O /etc/sysctl.conf "${REPO}config/sysctl.conf" > /dev/null 2>&1
+sysctl -p > /dev/null 2>&1
+ulimit -n 67108864
 print_success "SSHD"
 }
 function memasang_vnstat(){
@@ -1025,8 +1031,8 @@ cd
 echo "Port 2222" >> /etc/ssh/sshd_config
 echo "Port 2269" >> /etc/ssh/sshd_config
 sed -i 's/#AllowTcpForwarding yes/AllowTcpForwarding yes/g' /etc/ssh/sshd_config
-service ssh restart
-service sshd restart
+service ssh restart > /dev/null 2>&1
+service sshd restart > /dev/null 2>&1
 rm -rf /etc/slowdns
 mkdir -m 777 /etc/slowdns
 wget -q -O /etc/slowdns/dnstt-server "${REPO}slowdns/dnstt-server" > /dev/null 2>&1

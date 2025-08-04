@@ -17,15 +17,15 @@ install_services() {
 
     echo "1. Menghapus layanan lama dan file terkait..."
     for service in "${ALL_SERVICES[@]}"; do
-        systemctl disable --now "${service}.timer" &>/dev/null
-        systemctl disable --now "${service}.service" &>/dev/null
+        systemctl disable --now "${service}.timer" > /dev/null 2>&1
+        systemctl disable --now "${service}.service" > /dev/null 2>&1
         rm -f "/etc/systemd/system/${service}.service"
         rm -f "/etc/systemd/system/${service}.timer"
         echo "- ${service} dihapus."
     done
 
-    rm -f "/usr/local/bin/"{lite-vm,lite-vl,lite-trj,lite-shd,lite-ssh} &>/dev/null
-    rm -f "/etc/xray/limit."{vmess,vless,trojan,shadowsocks} &>/dev/null
+    rm -f "/usr/local/bin/"{lite-vm,lite-vl,lite-trj,lite-shd,lite-ssh} > /dev/null 2>&1
+    rm -f "/etc/xray/limit."{vmess,vless,trojan,shadowsocks} > /dev/null 2>&1
     echo "- File biner lama dihapus."
 
     echo "2. Menginstal skrip dan membuat layanan Limit IP..."
@@ -114,7 +114,7 @@ EOF
     echo "4. Memuat ulang systemd dan mengaktifkan semua timer..."
     systemctl daemon-reload
     for service in "${ALL_SERVICES[@]}"; do
-        systemctl enable --now "${service}.timer" &>/dev/null
+        systemctl enable --now "${service}.timer" > /dev/null 2>&1
         echo "- ${service}.timer diaktifkan."
     done
 
