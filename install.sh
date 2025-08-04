@@ -287,9 +287,11 @@ function memasang_domain() {
         echo ""
         if [[ $host == "1" ]]; then
             read -p "Silahkan Masukan Domain Mu: " host1
-            echo "IP=" >> /var/lib/ipvps.conf
+            echo "IP=$host1" >> /var/lib/ipvps.conf
             echo $host1 > /etc/xray/domain
             echo $host1 > /root/domain
+            echo "ns-$host1" > /root/nsdomain
+            echo "ns-$host1" > /etc/xray/dns
             echo -e "${BIWhite}Subdomain $host1 Mu Berhasil Di Atur${NC}"
             echo ""
             break
@@ -961,36 +963,33 @@ chmod +x /etc/default/dropbear
 wget -q -O /etc/banner-ssh.txt "${REPO}files/issue.net" > /dev/null 2>&1
 chmod +x /etc/banner-ssh.txt
 echo "Banner /etc/banner-ssh.txt" >> /etc/ssh/sshd_config > /dev/null 2>&1
-systemctl enable dropbear
-systemctl start dropbear
-systemctl restart dropbear
+systemctl enable dropbear >> /dev/null 2>&1
 apt -y install squid >> /dev/null 2>&1
 wget -q -O /etc/squid/squid.conf "${REPO}files/squid3.conf" > /dev/null 2>&1
 sed -i $MYIP5 /etc/squid/squid.conf >> /dev/null 2>&1
-/etc/init.d/squid restart >> /dev/null 2>&1
 print_success "Dropbear"
 }
 function memasang_sshws(){
     clear
     print_install "Memasang Websocket Python"
-    wget -O /usr/local/bin/ws-stunnel ${REPO}files/ws-stunnel > /dev/null 2>&1
-    wget -O /usr/bin/tun.conf "${REPO}config/tun.conf" > /dev/null 2>&1
+    wget -q -O /usr/local/bin/ws-stunnel ${REPO}files/ws-stunnel >> /dev/null 2>&1
+    wget -q -O /usr/bin/tun.conf "${REPO}config/tun.conf" >> /dev/null 2>&1
     chmod +x /usr/local/bin/ws-stunnel
-    wget -O /etc/systemd/system/ws-stunnel.service ${REPO}files/ws-stunnel.service && chmod +x /etc/systemd/system/ws-stunnel.service > /dev/null 2>&1
+    wget -q -O /etc/systemd/system/ws-stunnel.service ${REPO}files/ws-stunnel.service && chmod +x /etc/systemd/system/ws-stunnel.service >> /dev/null 2>&1
     systemctl daemon-reload
     systemctl enable ws-stunnel.service
     systemctl start ws-stunnel.service
     systemctl restart ws-stunnel.service
     chmod 644 /usr/bin/tun.conf
-    wget -q -O /usr/local/share/xray/geosite.dat "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat" > /dev/null 2>&1
-    wget -q -O /usr/local/share/xray/geoip.dat "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat" > /dev/null 2>&1
+    wget -q -O /usr/local/share/xray/geosite.dat "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat" >> /dev/null 2>&1
+    wget -q -O /usr/local/share/xray/geoip.dat "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat" >> /dev/null 2>&1
     iptables-save > /etc/iptables.up.rules
     iptables-restore -t < /etc/iptables.up.rules
     netfilter-persistent save
     netfilter-persistent reload
     cd
-    apt autoclean -y > /dev/null 2>&1
-    apt autoremove -y > /dev/null 2>&1
+    apt autoclean -y >> /dev/null 2>&1
+    apt autoremove -y >> /dev/null 2>&1
     print_success "Websocket Python"
 }
 function memasang_slowdns() {
@@ -1042,7 +1041,7 @@ User=root
 CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
 AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
 NoNewPrivileges=true
-ExecStart=/etc/slowdns/dnstt-server -udp 0.0.0.0:5300 -privkey-file /etc/slowdns/server.key $nameserver 127.0.0.1:443
+ExecStart=/etc/slowdns/dnstt-server -udp 0.0.0.0:5300 -privkey-file /etc/slowdns/server.key $nameserver 127.0.0.1:444
 Restart=on-failure
 
 [Install]
