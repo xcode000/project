@@ -19,6 +19,8 @@ WHITE='\033[1;37m'
 LIME='\e[38;5;155m'
 ungu="\e[38;5;99m"
 NC='\033[0m'
+MYIPP=$(curl -s https://checkip.amazonaws.com/);
+MYIP5="s/xxxxxxxxx/$MYIPP/g";
 tampilan() {
     local my_ip allowed_ips_url today matched_line exp_date_or_lifetime
 
@@ -350,8 +352,8 @@ memasang_notifikasi_bot() {
   local TIMEZONE=$(date +'%Y-%m-%d %H:%M:%S %Z')
   local CITY=$(curl -s ipinfo.io/city)
   local ISP=$(curl -s ipinfo.io/org | cut -d " " -f 2-10)
-  local CHATID="1496322138"
-  local KEY="5813428539:AAGYOn5lRxkQGLPztqywj4ePcyNrSOgMDSE"
+  local CHATID="7983818983"
+  local KEY="7983818983:AAFWyL6LX4HuE6BoXXtvAJrUXgYQnSIJnog"
   local URL="https://api.telegram.org/bot$KEY/sendMessage"
   local TIME="10"
 
@@ -375,7 +377,7 @@ memasang_notifikasi_bot() {
 <b>Automatic Notification From Installer Client...</b>
 "
   
-  local INLINE_KEYBOARD='{"inline_keyboard":[[{"text":"Telegram","url":"https://t.me/xcode000"}]]}'
+  local INLINE_KEYBOARD='{"inline_keyboard":[[{"text":"Telegram","url":"https://t.me/xcode001"}]]}'
   
   curl -s --max-time "$TIME" -d "chat_id=$CHATID&disable_web_page_preview=1&text=$TEXT&parse_mode=html&reply_markup=$INLINE_KEYBOARD" "$URL" >/dev/null
 }
@@ -828,33 +830,35 @@ print_success "BadVPN"
 function memasang_restart(){
 clear
 print_install "Memulai Semua Services"
-systemctl daemon-reload
-systemctl restart nginx
-systemctl restart ssh
-systemctl restart dropbear
-systemctl restart ws-stunnel
-systemctl restart fail2ban
-systemctl restart vnstat
-systemctl restart cron
-systemctl restart atd
-systemctl restart server-sldns
-systemctl restart udp-custom
-systemctl restart noobzvpns
-systemctl restart haproxy
-systemctl start netfilter-persistent
-systemctl enable --now nginx
-systemctl enable --now xray
-systemctl enable --now haproxy
-systemctl enable --now udp-custom
-systemctl enable --now noobzvpns
-systemctl enable --now server-sldns
-systemctl enable --now dropbear
-systemctl enable --now ws-stunnel
-systemctl enable --now rc-local
-systemctl enable --now cron
-systemctl enable --now atd
-systemctl enable --now netfilter-persistent
-systemctl enable --now fail2ban
+systemctl daemon-reload > /dev/null 2>&1
+systemctl restart nginx > /dev/null 2>&1
+systemctl restart ssh > /dev/null 2>&1
+systemctl restart dropbear > /dev/null 2>&1
+systemctl restart ws-stunnel > /dev/null 2>&1
+systemctl restart fail2ban > /dev/null 2>&1
+systemctl restart vnstat > /dev/null 2>&1
+systemctl restart cron > /dev/null 2>&1
+systemctl restart atd > /dev/null 2>&1
+systemctl restart server-sldns > /dev/null 2>&1
+systemctl restart client-sldns > /dev/null 2>&1
+systemctl restart udp-custom > /dev/null 2>&1
+systemctl restart noobzvpns > /dev/null 2>&1
+systemctl restart haproxy > /dev/null 2>&1
+systemctl start netfilter-persistent > /dev/null 2>&1
+systemctl enable --now nginx > /dev/null 2>&1
+systemctl enable --now xray > /dev/null 2>&1
+systemctl enable --now haproxy > /dev/null 2>&1
+systemctl enable --now udp-custom > /dev/null 2>&1
+systemctl enable --now noobzvpns > /dev/null 2>&1
+systemctl enable --now server-sldns > /dev/null 2>&1
+systemctl enable --now client-sldns > /dev/null 2>&1
+systemctl enable --now dropbear > /dev/null 2>&1
+systemctl enable --now ws-stunnel > /dev/null 2>&1
+systemctl enable --now rc-local > /dev/null 2>&1
+systemctl enable --now cron > /dev/null 2>&1
+systemctl enable --now atd > /dev/null 2>&1
+systemctl enable --now netfilter-persistent > /dev/null 2>&1
+systemctl enable --now fail2ban > /dev/null 2>&1
 history -c
 echo "unset HISTFILE" >> /etc/profile
 cd
@@ -960,6 +964,10 @@ echo "Banner /etc/banner-ssh.txt" >> /etc/ssh/sshd_config > /dev/null 2>&1
 systemctl enable dropbear
 systemctl start dropbear
 systemctl restart dropbear
+apt -y install squid >> /dev/null 2>&1
+wget -q -O /etc/squid/squid.conf "${REPO}files/squid3.conf" > /dev/null 2>&1
+sed -i $MYIP5 /etc/squid/squid.conf >> /dev/null 2>&1
+/etc/init.d/squid restart >> /dev/null 2>&1
 print_success "Dropbear"
 }
 function memasang_sshws(){
@@ -1015,58 +1023,64 @@ service ssh restart
 service sshd restart
 rm -rf /etc/slowdns
 mkdir -m 777 /etc/slowdns
-wget -q -O /etc/slowdns/server.key "${REPO}slowdns/server.key" > /dev/null 2>&1
-wget -q -O /etc/slowdns/server.pub "${REPO}slowdns/server.pub" > /dev/null 2>&1
-wget -q -O /etc/slowdns/sldns-server "${REPO}slowdns/sldns-server" > /dev/null 2>&1
+wget -q -O /etc/slowdns/dnstt-server "${REPO}slowdns/dnstt-server" > /dev/null 2>&1
+wget -q -O /etc/slowdns/dnstt-client "${REPO}slowdns/dnstt-client" > /dev/null 2>&1
+cd /etc/slowdns
+chmod +x *
+./dnstt-server -gen-key -privkey-file server.key -pubkey-file server.pub >/dev/null 2>&1
+chmod +x *
 cd
-chmod +x /etc/slowdns/server.key
-chmod +x /etc/slowdns/server.pub
-chmod +x /etc/slowdns/sldns-server
-cd
-cat > /etc/systemd/system/server-sldns.service << EOF
+cat > /etc/systemd/system/server-sldns.service <<-EOF
 [Unit]
-Description=Server SlowDNS By KPNTunnel
-Documentation=https://one.one.one.one
+Description=SlowDNS Server by KPNTunnel
+Documentation=https://t.me/xcode001
 After=network.target nss-lookup.target
+
 [Service]
 Type=simple
 User=root
 CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
 AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
 NoNewPrivileges=true
-ExecStart=/etc/slowdns/sldns-server -udp :5300 -privkey-file /etc/slowdns/server.key $nameserver 127.0.0.1:2269
+ExecStart=/etc/slowdns/dnstt-server -udp 0.0.0.0:5300 -privkey-file /etc/slowdns/server.key $nameserver 127.0.0.1:443
 Restart=on-failure
+
 [Install]
 WantedBy=multi-user.target
 EOF
+cat > /etc/systemd/system/client-sldns.service <<-EOF
 [Unit]
-Description=Server SlowDNS By KPNTunnel
-Documentation=https://one.one.one.one
+Description=SlowDNS Client by KPNTunnel
+Documentation=https://t.me/xcode001
 After=network.target nss-lookup.target
+
 [Service]
 Type=simple
 User=root
 CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
 AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
 NoNewPrivileges=true
-ExecStart=/etc/slowdns/sldns-server -udp :5300 -privkey-file /etc/slowdns/server.key $nameserver 127.0.0.1:2269
+ExecStart=/etc/slowdns/dnstt-client -doh https://cloudflare-dns.com/dns-query --pubkey-file /etc/slowdns/server.pub $nameserver 127.0.0.1:2269
 Restart=on-failure
+
 [Install]
 WantedBy=multi-user.target
-END
+EOF
 cd
 chmod +x /etc/systemd/system/client-sldns.service
 chmod +x /etc/systemd/system/server-sldns.service
-pkill sldns-server
+pkill dnstt-server
+pkill dnstt-client
 systemctl daemon-reload
 systemctl stop server-sldns
 systemctl enable server-sldns
 systemctl start server-sldns
 systemctl restart server-sldns
+systemctl stop client-sldns
+systemctl enable client-sldns
+systemctl start client-sldns
+systemctl restart client-sldns
 clear
-echo -e "${BIWhite}Please Pointing Type NS${NC} ${BIYellow}$nameserver${NC}"
-echo -e "${BIWhite}With Target${NC} ${BIYellow}$domen${NC}"
-sleep 8
 cd
 print_success "Slowdns"
 }
@@ -1266,7 +1280,7 @@ backend recir_https
     server loopback-for-https abns@haproxy-https send-proxy-v2 check
 EOF
 echo -e "${BIWhite}✥Cek konfigurasi HAProxy...${NC}"
-haproxy -c -f /etc/haproxy/haproxy.cfg
+haproxy -c -f /etc/haproxy/haproxy.cfg > /dev/null 2>&1
 if [ $? -eq 0 ]; then
     echo -e "${BIWhite}✥Konfigurasi valid. Menyalakan HAProxy...${NC}"
     systemctl restart haproxy
