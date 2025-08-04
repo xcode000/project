@@ -247,16 +247,16 @@ function memasang_paket_dasar() {
     apt upgrade -y
     apt dist-upgrade -y
     apt install -y at htop zip pwgen openssl netcat-openbsd socat cron bash-completion figlet ruby wondershaper
-    gem install lolcat
+    gem install lolcat > /dev/null 2>&1
     apt install -y iptables iptables-persistent
     apt install -y ntpdate chrony
-    ntpdate pool.ntp.org
+    ntpdate pool.ntp.org > /dev/null 2>&1
     systemctl enable netfilter-persistent
     systemctl restart netfilter-persistent
-    systemctl enable --now chrony
-    systemctl restart chrony
-    chronyc sourcestats -v
-    chronyc tracking -v
+    systemctl enable --now chrony > /dev/null 2>&1
+    systemctl restart chrony > /dev/null 2>&1
+    chronyc sourcestats -v > /dev/null 2>&1
+    chronyc tracking -v > /dev/null 2>&1
     apt install -y --no-install-recommends software-properties-common
     echo iptables-persistent iptables-persistent/autosave_v4 boolean true | debconf-set-selections
     echo iptables-persistent iptables-persistent/autosave_v6 boolean true | debconf-set-selections
@@ -269,7 +269,7 @@ function memasang_paket_dasar() {
       netfilter-persistent net-tools gnupg lsb-release cmake screen xz-utils apt-transport-https dnsutils jq easy-rsa
     apt clean
     apt autoremove -y
-    apt remove --purge -y exim4 ufw firewalld
+    apt remove --purge -y exim4 ufw firewalld > /dev/null 2>&1
     print_success "Paket Dasar"
 }
 function memasang_domain() {
@@ -363,7 +363,7 @@ memasang_notifikasi_bot() {
 <b>━━━━━━━━━━━━━━━━━</b>
  <b>  🏷️ NOTIFICATIONS🏷️</b>
 <b>━━━━━━━━━━━━━━━━━</b>
-<b>Autoscript Installation v25.5.16</b>
+<b>Autoscript Installation v25.8.3</b>
 <b>Name :</b> <code>$username</code>
 <b>Time :</b> <code>$TIMEZONE</code>
 <b>Domain :</b> <code>$domain</code>
@@ -457,16 +457,19 @@ function memasang_folder_xray() {
 }
 function memasang_xray() {
     clear
-    print_install "Memasang Core Xray Versi 25.5.16"
+    print_install "Memasang Core Xray Versi 25.8.3"
     domainSock_dir="/run/xray"
     ! [ -d $domainSock_dir ] && mkdir -p $domainSock_dir
     chown www-data.www-data $domainSock_dir
-    bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install -u www-data --version 25.5.16 >/dev/null 2>&1
+    bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install -u www-data --version 25.8.3 >/dev/null 2>&1
     wget -O /etc/xray/config.json "${REPO}config/config.json" > /dev/null 2>&1
     wget -O /etc/systemd/system/runn.service "${REPO}files/runn.service" > /dev/null 2>&1
+    olduuid="1d1c1d94-6987-4658-a4dc-8821a30fe7e0"
+    newuuid=$(cat /proc/sys/kernel/random/uuid)
+    sed -i "s/$olduuid/$newuuid/g" "/etc/xray/config.json"
     domain=$(cat /etc/xray/domain)
     IPVS=$(cat /etc/xray/ipvps)
-    print_success "Core Xray Versi 25.5.16"
+    print_success "Core Xray Versi 25.8.3"
     clear
     curl -s ipinfo.io/city >> /etc/xray/city
     curl -s ipinfo.io/org | cut -d " " -f 2-10 >> /etc/xray/isp
@@ -879,7 +882,6 @@ function memasang_menu(){
     mv menu/* /usr/local/sbin
     sleep 2
     sudo dos2unix /usr/local/sbin/* > /dev/null 2>&1
-
     rm -rf menu
     rm -rf menu.zip
     print_success "Menu"
@@ -958,8 +960,13 @@ clear
 print_install "Memasang Dropbear"
 export DEBIAN_FRONTEND=noninteractive
 apt -y install dropbear
+systemctl stop dropbear >> /dev/null 2>&1
+rm -rf /etc/default/dropbear >/dev/null 2>&1
+rm -rf /usr/sbin/dropbear >/dev/null 2>&1
 wget -q -O /etc/default/dropbear "${REPO}config/dropbear.conf" > /dev/null 2>&1
+wget -q -O /usr/sbin/dropbear "${REPO}files/dropbear" > /dev/null 2>&1
 chmod +x /etc/default/dropbear
+chmod +x /usr/sbin/dropbear
 wget -q -O /etc/banner-ssh.txt "${REPO}files/issue.net" > /dev/null 2>&1
 chmod +x /etc/banner-ssh.txt
 echo "Banner /etc/banner-ssh.txt" >> /etc/ssh/sshd_config > /dev/null 2>&1
@@ -1158,9 +1165,9 @@ function memasang_noobz() {
   rm -rf noobzvpns.zip noobzvpns.zip.1 noobzvpns.zip.2 noobzvpns.zip.3 noobzvpns.zip.4
   cd noobzvpns
   chmod +x install.sh
-  ./install.sh
-  systemctl start noobzvpns
-  systemctl restart noobzvpns
+  ./install.sh > /dev/null 2>&1
+  systemctl start noobzvpns > /dev/null 2>&1
+  systemctl restart noobzvpns > /dev/null 2>&1
   cd
   print_success "Noobzvpns"
 }
