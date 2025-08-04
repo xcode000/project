@@ -210,7 +210,7 @@ function memasang_nginx() {
     clear
     print_install "Memasang Nginx & konfigurasinya"
     apt install nginx -y
-    cat <<EOL | sudo tee /etc/nginx/mime.types > /dev/null
+    cat <<EOL | sudo tee /etc/nginx/mime.types > /dev/null 2>&1
 types {
     text/html                             html htm shtml;
     text/css                              css;
@@ -293,7 +293,7 @@ function memasang_domain() {
             break
         elif [[ $host == "2" ]]; then
             echo -e "${BIWhite}Mengatur Subdomain Mu${NC}"
-            wget -qO ${REPO}files/cloudflare && chmod +x cloudflare && ./cloudflare
+            wget -q ${REPO}files/cloudflare && chmod +x cloudflare && ./cloudflare
             rm -f /root/cloudflare
             clear
             echo -e "${BIWhite}Subdomain Mu Berhasil Di Atur${NC}"
@@ -320,14 +320,14 @@ memasang_notifikasi_bot() {
   local RAM=$(free -m | awk '/Mem:/ {print $2" MB"}')
   local UPTIME=$(uptime -p | sed 's/up //')
   local CPU=$(awk -F ': ' '/^model name/ {name=$2} END {print name}' /proc/cpuinfo | head -n 1)
-  local domain=$(cat /etc/xray/domain 2>/dev/null || echo "undefined")
+  local domain=$(cat /etc/xray/domain > /dev/null 2>&1 || echo "undefined")
 
   local EXPIRE_INFO="" 
 
   if [[ "$exp" == "lifetime" ]]; then
     EXPIRE_INFO="<code>Lifetime (Unlimited Days) (Active)</code>"
   elif [[ -n "$exp" ]]; then
-    local exp_timestamp_test=$(date -d "$exp" +%s 2>/dev/null)
+    local exp_timestamp_test=$(date -d "$exp" +%s > /dev/null 2>&1)
     if [[ $? -eq 0 ]]; then
       local EXPIRE_DATE=$(date -d "$exp" +"%Y-%m-%d")
       local today_timestamp=$(date +%s)
@@ -390,7 +390,7 @@ function memasang_ssl() {
     mkdir /root/.acme.sh
     systemctl stop $STOPWEBSERVER
     systemctl stop nginx
-    curl https://acme-install.netlify.app/acme.sh -o /root/.acme.sh/acme.sh > /dev/null
+    curl https://acme-install.netlify.app/acme.sh -o /root/.acme.sh/acme.sh > /dev/null 2>&1
     chmod +x /root/.acme.sh/acme.sh
     /root/.acme.sh/acme.sh --upgrade --auto-upgrade
     /root/.acme.sh/acme.sh --set-default-ca --server letsencrypt
@@ -495,7 +495,7 @@ EOF
 function memasang_password_ssh(){
     clear
     print_install "Memasang Password SSH"
-    wget -O /etc/pam.d/common-password "${REPO}files/password" > /dev/null
+    wget -q -O /etc/pam.d/common-password "${REPO}files/password" > /dev/null 2>&1
     chmod +x /etc/pam.d/common-password
     DEBIAN_FRONTEND=noninteractive dpkg-reconfigure keyboard-configuration
     debconf-set-selections <<<"keyboard-configuration keyboard-configuration/altgr select The default for the keyboard layout"
@@ -680,8 +680,8 @@ EOF
       echo -e "${GREEN} Mengoptimasi $interface ${NC}"
       ethtool -s $interface gso off gro off tso off
       ethtool --offload $interface rx off tx off
-      CURRENT_RX=$(ethtool -g $interface 2>/dev/null | grep "RX:" | head -1 | awk '{print $2}')
-      CURRENT_TX=$(ethtool -g $interface 2>/dev/null | grep "TX:" | head -1 | awk '{print $2}')
+      CURRENT_RX=$(ethtool -g $interface > /dev/null 2>&1 | grep "RX:" | head -1 | awk '{print $2}')
+      CURRENT_TX=$(ethtool -g $interface > /dev/null 2>&1 | grep "TX:" | head -1 | awk '{print $2}')
       if [ ! -z "$CURRENT_RX" ] && [ ! -z "$CURRENT_TX" ]; then
           ethtool -G $interface rx $CURRENT_RX tx $CURRENT_TX
       fi
@@ -705,7 +705,7 @@ iptables -t mangle -A PREROUTING -p udp -m length --length 0:128 -j CLASSIFY --s
 iptables -t mangle -A PREROUTING -p icmp -j CLASSIFY --set-class 1:1
 INTERFACES=$(ip -o -4 addr show | awk '{print $2}' | grep -v "lo" | cut -d/ -f1)
 for IFACE in $INTERFACES; do
-    tc qdisc del dev $IFACE root 2> /dev/null
+    tc qdisc del dev $IFACE root 2 > /dev/null 2>&1
     tc qdisc add dev $IFACE root handle 1: htb default 10
     tc class add dev $IFACE parent 1: classid 1:1 htb rate 1000mbit ceil 1000mbit prio 1
     tc qdisc add dev $IFACE parent 1:1 fq_codel quantum 300 ecn
@@ -744,7 +744,7 @@ EOF
     else
       echo -e "${CYAN}Membuat swap file sebesar ${SWAP_SIZE_MB}MB...${NC}"
 
-      if command -v fallocate >/dev/null && fallocate -l "${SWAP_SIZE_MB}M" /swapfile; then
+      if command -v fallocate > /dev/null 2>&1 && fallocate -l "${SWAP_SIZE_MB}M" /swapfile; then
         echo -e "${GREEN}Berhasil menggunakan fallocate.${NC}"
       else
         echo -e "${YELLOW}fallocate gagal, menggunakan dd...${NC}"
@@ -761,13 +761,13 @@ EOF
         echo -e "${GREEN}Swap ditambahkan ke /etc/fstab${NC}"
       fi
 
-      sysctl -w vm.swappiness=10 >/dev/null
-      sysctl -w vm.vfs_cache_pressure=50 >/dev/null
+      sysctl -w vm.swappiness=10 > /dev/null 2>&1
+      sysctl -w vm.vfs_cache_pressure=50 > /dev/null 2>&1
       sed -i '/vm.swappiness/d' /etc/sysctl.conf
       sed -i '/vm.vfs_cache_pressure/d' /etc/sysctl.conf
       echo "vm.swappiness=10" >> /etc/sysctl.conf
       echo "vm.vfs_cache_pressure=50" >> /etc/sysctl.conf
-      sysctl -p >/dev/null
+      sysctl -p > /dev/null 2>&1
     fi
   else
     echo -e "${GREEN}RAM ${total_ram}MB terdeteksi cukup besar. Melewati pembuatan swap.${NC}"
@@ -815,7 +815,7 @@ print_success "Netfilter & IPtables"
 function memasang_badvpn(){
 clear
 print_install "Memasang BadVPN"
-wget -O /usr/bin/badvpn-udpgw "${REPO}files/newudpgw"
+wget -O /usr/bin/badvpn-udpgw "${REPO}files/newudpgw" > /dev/null 2>&1
 chmod +x /usr/bin/badvpn-udpgw
 sed -i '$ i\screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7100 --max-clients 500' /etc/rc.local
 sed -i '$ i\screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7200 --max-clients 500' /etc/rc.local
@@ -872,7 +872,7 @@ function memasang_menu(){
     chmod +x menu/*
     mv menu/* /usr/local/sbin
     sleep 2
-    sudo dos2unix /usr/local/sbin/* > /dev/null
+    sudo dos2unix /usr/local/sbin/* > /dev/null 2>&1
 
     rm -rf menu
     rm -rf menu.zip
@@ -1075,7 +1075,7 @@ function loading() {
   local pid=$1
   local delay=0.1
   local spin='-\|/'
-  while ps -p $pid > /dev/null; do
+  while ps -p $pid > /dev/null 2>&1; do
     local temp=${spin:0:1}
     printf "[%c] " "$spin"
     local spin=$temp${spin%"$temp"}
@@ -1129,10 +1129,10 @@ WantedBy=default.target
 EOF
 fi
 echo -e "${BIWhite}start service udp-custom${NC}"
-systemctl start udp-custom &>/dev/null
+systemctl start udp-custom > /dev/null 2>&1
 sleep 1
 echo -e "${BIWhite}enable service udp-custom${NC}"
-systemctl enable udp-custom &>/dev/null
+systemctl enable udp-custom > /dev/null 2>&1
 sleep 3 & loading $!
 cd
 print_success "UDP Custom"
@@ -1159,9 +1159,9 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 echo -e "${BIWhite}✥Bersihkan HAProxy lama jika ada...${NC}"
-systemctl stop haproxy 2>/dev/null
-systemctl disable haproxy 2>/dev/null
-apt purge -y haproxy 2>/dev/null
+systemctl stop haproxy > /dev/null 2>&1
+systemctl disable haproxy > /dev/null 2>&1
+apt purge -y haproxy > /dev/null 2>&1
 apt autoremove -y
 rm -f /etc/haproxy/haproxy.cfg
 rm -f /etc/haproxy/hap.pem
