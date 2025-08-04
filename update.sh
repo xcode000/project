@@ -66,7 +66,7 @@ fun_bar() {
 }
 res1() {
     wget https://raw.githubusercontent.com/xcode000/project/main/menu/menu.zip
-    unzip -P obhy12 menu.zip
+    unzip -P kpntunnelenc01 menu.zip
     chmod +x menu/*
     mv menu/* /usr/local/sbin
     sleep 2

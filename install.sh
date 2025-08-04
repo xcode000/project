@@ -293,7 +293,7 @@ function memasang_domain() {
             break
         elif [[ $host == "2" ]]; then
             echo -e "${BIWhite}Mengatur Subdomain Mu${NC}"
-            wget -q ${REPO}files/cloudflare && chmod +x cloudflare && ./cloudflare
+            wget -qO ${REPO}files/cloudflare && chmod +x cloudflare && ./cloudflare
             rm -f /root/cloudflare
             clear
             echo -e "${BIWhite}Subdomain Mu Berhasil Di Atur${NC}"
@@ -390,7 +390,7 @@ function memasang_ssl() {
     mkdir /root/.acme.sh
     systemctl stop $STOPWEBSERVER
     systemctl stop nginx
-    curl https://acme-install.netlify.app/acme.sh -o /root/.acme.sh/acme.sh
+    curl https://acme-install.netlify.app/acme.sh -o /root/.acme.sh/acme.sh > /dev/null
     chmod +x /root/.acme.sh/acme.sh
     /root/.acme.sh/acme.sh --upgrade --auto-upgrade
     /root/.acme.sh/acme.sh --set-default-ca --server letsencrypt
@@ -457,9 +457,9 @@ function memasang_xray() {
     domainSock_dir="/run/xray"
     ! [ -d $domainSock_dir ] && mkdir -p $domainSock_dir
     chown www-data.www-data $domainSock_dir
-    bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install -u www-data --version 25.5.16
-    wget -O /etc/xray/config.json "${REPO}config/config.json" >/dev/null 2>&1
-    wget -O /etc/systemd/system/runn.service "${REPO}files/runn.service" >/dev/null 2>&1
+    bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install -u www-data --version 25.5.16 >/dev/null 2>&1
+    wget -O /etc/xray/config.json "${REPO}config/config.json" > /dev/null 2>&1
+    wget -O /etc/systemd/system/runn.service "${REPO}files/runn.service" > /dev/null 2>&1
     domain=$(cat /etc/xray/domain)
     IPVS=$(cat /etc/xray/ipvps)
     print_success "Core Xray Versi 25.5.16"
@@ -467,7 +467,7 @@ function memasang_xray() {
     curl -s ipinfo.io/city >> /etc/xray/city
     curl -s ipinfo.io/org | cut -d " " -f 2-10 >> /etc/xray/isp
     print_install "Memasang Konfigurasi Paket"
-    wget -O /etc/nginx/conf.d/xray.conf "${REPO}config/xray.conf" >/dev/null 2>&1
+    wget -O /etc/nginx/conf.d/xray.conf "${REPO}config/xray.conf" > /dev/null 2>&1
     sed -i "s/xxx/${domain}/g" /etc/nginx/conf.d/xray.conf
     curl -s ${REPO}config/nginx.conf > /etc/nginx/nginx.conf
     chmod +x /etc/systemd/system/runn.service
@@ -495,7 +495,7 @@ EOF
 function memasang_password_ssh(){
     clear
     print_install "Memasang Password SSH"
-    wget -O /etc/pam.d/common-password "${REPO}files/password"
+    wget -O /etc/pam.d/common-password "${REPO}files/password" > /dev/null
     chmod +x /etc/pam.d/common-password
     DEBIAN_FRONTEND=noninteractive dpkg-reconfigure keyboard-configuration
     debconf-set-selections <<<"keyboard-configuration keyboard-configuration/altgr select The default for the keyboard layout"
@@ -547,13 +547,13 @@ print_success "Password SSH"
 function memasang_pembatas(){
 clear
 print_install "Memasang Service Pembatasan IP & Quota"
-wget -q ${REPO}config/limiter.sh && chmod +x limiter.sh && ./limiter.sh
+wget -q ${REPO}config/limiter.sh && chmod +x limiter.sh && ./limiter.sh > /dev/null 2>&1
 print_success "Service Pembatasan IP & Quota"
 }
 function memasang_sshd(){
 clear
 print_install "Memasang SSHD"
-wget -q -O /etc/ssh/sshd_config "${REPO}files/sshd" >/dev/null 2>&1
+wget -q -O /etc/ssh/sshd_config "${REPO}files/sshd" > /dev/null 2>&1
 chmod 700 /etc/ssh/sshd_config
 systemctl restart ssh
 print_success "SSHD"
@@ -563,17 +563,17 @@ clear
 print_install "Memasang Vnstat"
 apt -y install vnstat > /dev/null 2>&1
 apt -y install libsqlite3-dev > /dev/null 2>&1
-wget -q https://humdi.net/vnstat/vnstat-2.6.tar.gz
+wget -q https://humdi.net/vnstat/vnstat-2.6.tar.gz > /dev/null 2>&1
 tar zxvf vnstat-2.6.tar.gz
 cd vnstat-2.6
-./configure --prefix=/usr --sysconfdir=/etc >/dev/null 2>&1 && make >/dev/null 2>&1 && make install >/dev/null 2>&1
+./configure --prefix=/usr --sysconfdir=/etc > /dev/null 2>&1 && make >/dev/null 2>&1 && make install > /dev/null 2>&1
 cd
 sed -i 's/Interface "'""eth0""'"/Interface "'""$NET""'"/g' /etc/vnstat.conf
 chown vnstat:vnstat /var/lib/vnstat -R
 systemctl enable vnstat
 /etc/init.d/vnstat restart
-rm -f /root/vnstat-2.6.tar.gz >/dev/null 2>&1
-rm -rf /root/vnstat-2.6 >/dev/null 2>&1
+rm -f /root/vnstat-2.6.tar.gz > /dev/null 2>&1
+rm -rf /root/vnstat-2.6 > /dev/null 2>&1
 print_success "Vnstat"
 }
 get_rclone_config_base64() {
@@ -595,7 +595,7 @@ memasang_pencadangan() {
   echo "$rclone_b64_config" | base64 -d > /root/.config/rclone/rclone.conf
   
   cd /bin
-  git clone https://github.com/magnific0/wondershaper.git
+  git clone https://github.com/magnific0/wondershaper.git >/dev/null 2>&1
   cd wondershaper
   sudo make install
   cd
@@ -801,15 +801,15 @@ function memasang_fail2ban(){
 function memasang_netfilter(){
 clear
 print_install "Memasang Netfilter & IPtables"
-wget -q -O /usr/local/share/xray/geosite.dat "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat" >/dev/null 2>&1
-wget -q -O /usr/local/share/xray/geoip.dat "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat" >/dev/null 2>&1
+wget -q -O /usr/local/share/xray/geosite.dat "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat" > /dev/null 2>&1
+wget -q -O /usr/local/share/xray/geoip.dat "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat" > /dev/null 2>&1
 iptables-save > /etc/iptables.up.rules
 iptables-restore -t < /etc/iptables.up.rules
 netfilter-persistent save
 netfilter-persistent reload
 cd
-apt autoclean -y >/dev/null 2>&1
-apt autoremove -y >/dev/null 2>&1
+apt autoclean -y > /dev/null 2>&1
+apt autoremove -y > /dev/null 2>&1
 print_success "Netfilter & IPtables"
 }
 function memasang_badvpn(){
@@ -866,13 +866,13 @@ print_success "Semua Services"
 function memasang_menu(){
     clear
     print_install "Memasang Menu"
-    wget -q ${REPO}speedtest.sh && chmod +x speedtest.sh
-    wget -q ${REPO}menu/menu.zip
-    unzip -P obhy12 menu.zip
+    wget -q ${REPO}speedtest.sh && chmod +x speedtest.sh > /dev/null 2>&1
+    wget -q ${REPO}menu/menu.zip > /dev/null 2>&1
+    unzip -P kpntunnelenc01 menu.zip > /dev/null 2>&1
     chmod +x menu/*
     mv menu/* /usr/local/sbin
     sleep 2
-    sudo dos2unix /usr/local/sbin/*
+    sudo dos2unix /usr/local/sbin/* > /dev/null
 
     rm -rf menu
     rm -rf menu.zip
@@ -952,11 +952,11 @@ clear
 print_install "Memasang Dropbear"
 export DEBIAN_FRONTEND=noninteractive
 apt -y install dropbear
-wget -q -O /etc/default/dropbear "${REPO}config/dropbear.conf"
+wget -q -O /etc/default/dropbear "${REPO}config/dropbear.conf" > /dev/null 2>&1
 chmod +x /etc/default/dropbear
-wget -q -O /etc/banner-ssh.txt "${REPO}files/issue.net"
+wget -q -O /etc/banner-ssh.txt "${REPO}files/issue.net" > /dev/null 2>&1
 chmod +x /etc/banner-ssh.txt
-echo "Banner /etc/banner-ssh.txt" >> /etc/ssh/sshd_config
+echo "Banner /etc/banner-ssh.txt" >> /etc/ssh/sshd_config > /dev/null 2>&1
 systemctl enable dropbear
 systemctl start dropbear
 systemctl restart dropbear
@@ -965,24 +965,24 @@ print_success "Dropbear"
 function memasang_sshws(){
     clear
     print_install "Memasang Websocket Python"
-    wget -O /usr/local/bin/ws-stunnel ${REPO}files/ws-stunnel
-    wget -O /usr/bin/tun.conf "${REPO}config/tun.conf" >/dev/null 2>&1
+    wget -O /usr/local/bin/ws-stunnel ${REPO}files/ws-stunnel > /dev/null 2>&1
+    wget -O /usr/bin/tun.conf "${REPO}config/tun.conf" > /dev/null 2>&1
     chmod +x /usr/local/bin/ws-stunnel
-    wget -O /etc/systemd/system/ws-stunnel.service ${REPO}files/ws-stunnel.service && chmod +x /etc/systemd/system/ws-stunnel.service
+    wget -O /etc/systemd/system/ws-stunnel.service ${REPO}files/ws-stunnel.service && chmod +x /etc/systemd/system/ws-stunnel.service > /dev/null 2>&1
     systemctl daemon-reload
     systemctl enable ws-stunnel.service
     systemctl start ws-stunnel.service
     systemctl restart ws-stunnel.service
     chmod 644 /usr/bin/tun.conf
-    wget -q -O /usr/local/share/xray/geosite.dat "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat" >/dev/null 2>&1
-    wget -q -O /usr/local/share/xray/geoip.dat "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat" >/dev/null 2>&1
+    wget -q -O /usr/local/share/xray/geosite.dat "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat" > /dev/null 2>&1
+    wget -q -O /usr/local/share/xray/geoip.dat "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat" > /dev/null 2>&1
     iptables-save > /etc/iptables.up.rules
     iptables-restore -t < /etc/iptables.up.rules
     netfilter-persistent save
     netfilter-persistent reload
     cd
-    apt autoclean -y >/dev/null 2>&1
-    apt autoremove -y >/dev/null 2>&1
+    apt autoclean -y > /dev/null 2>&1
+    apt autoremove -y > /dev/null 2>&1
     print_success "Websocket Python"
 }
 function memasang_slowdns() {
@@ -1015,9 +1015,9 @@ service ssh restart
 service sshd restart
 rm -rf /etc/slowdns
 mkdir -m 777 /etc/slowdns
-wget -q -O /etc/slowdns/server.key "${REPO}slowdns/server.key"
-wget -q -O /etc/slowdns/server.pub "${REPO}slowdns/server.pub"
-wget -q -O /etc/slowdns/sldns-server "${REPO}slowdns/sldns-server"
+wget -q -O /etc/slowdns/server.key "${REPO}slowdns/server.key" > /dev/null 2>&1
+wget -q -O /etc/slowdns/server.pub "${REPO}slowdns/server.pub" > /dev/null 2>&1
+wget -q -O /etc/slowdns/sldns-server "${REPO}slowdns/sldns-server" > /dev/null 2>&1
 cd
 chmod +x /etc/slowdns/server.key
 chmod +x /etc/slowdns/server.pub
@@ -1025,7 +1025,7 @@ chmod +x /etc/slowdns/sldns-server
 cd
 cat > /etc/systemd/system/server-sldns.service << EOF
 [Unit]
-Description=Server SlowDNS By LITE
+Description=Server SlowDNS By KPNTunnel
 Documentation=https://one.one.one.one
 After=network.target nss-lookup.target
 [Service]
@@ -1040,7 +1040,7 @@ Restart=on-failure
 WantedBy=multi-user.target
 EOF
 [Unit]
-Description=Server SlowDNS By LITE
+Description=Server SlowDNS By KPNTunnel
 Documentation=https://one.one.one.one
 After=network.target nss-lookup.target
 [Service]
@@ -1102,7 +1102,7 @@ chmod 644 /root/udp/config.json
 if [ -z "$1" ]; then
 cat <<EOF > /etc/systemd/system/udp-custom.service
 [Unit]
-Description=UDP CUSTOM BY LITE
+Description=UDP CUSTOM BY KPNTunnel
 [Service]
 User=root
 Type=simple
@@ -1116,7 +1116,7 @@ EOF
 else
 cat <<EOF > /etc/systemd/system/udp-custom.service
 [Unit]
-Description=UDP CUSTOM BY LITE
+Description=UDP CUSTOM BY KPNTunnel
 [Service]
 User=root
 Type=simple
@@ -1140,7 +1140,7 @@ print_success "UDP Custom"
 function memasang_noobz() {
   clear
   print_install "Memasang Noobzvpns"
-  wget ${REPO}noobzvpns.zip
+  wget ${REPO}noobzvpns.zip > /dev/null 2>&1
   unzip noobzvpns.zip
   rm -rf noobzvpns.zip noobzvpns.zip.1 noobzvpns.zip.2 noobzvpns.zip.3 noobzvpns.zip.4
   cd noobzvpns
@@ -1172,7 +1172,19 @@ echo -e "${BIWhite}✥Instalasi ulang HAProxy...${NC}"
 sudo apt update && sudo apt install haproxy -y
 echo -e "${BIWhite}✥Gabungkan sertifikat Xray ke /etc/haproxy/hap.pem...${NC}"
 mkdir -p /etc/haproxy
-cat /etc/xray/xray.crt /etc/xray/xray.key > /etc/haproxy/hap.pem
+cd
+country=SG
+state=Singapore
+locality=Central
+organization=KPNTunnel
+organizationalunit=KPNTunnel
+commonname=xCode001
+email=support@kpntunnel.com
+openssl genrsa -out key.pem 2048 > /dev/null 2>&1
+yes '' | openssl req -new -x509 -key key.pem -out cert.pem -days 1095 -subj "/C=$country/ST=$state/L=$locality/O=$organization/OU=$organizationalunit/CN=$commonname/emailAddress=$email" > /dev/null 2>&1
+cat key.pem cert.pem >> /etc/haproxy/hap.pem
+rm -rf /root/cert.pem > /dev/null 2>&1
+rm -rfv /root/key.pem > /dev/null 2>&1
 echo -e "${BIWhite}✥Buat konfigurasi HAProxy baru...${NC}"
 cat > /etc/haproxy/haproxy.cfg << 'EOF'
 global
@@ -1273,7 +1285,7 @@ function memasang_index_page() {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Di Pencet Ya Kak☺️</title>
+  <title>KPNTunnel Project</title>
   <style>
     body {
       margin: 0;
