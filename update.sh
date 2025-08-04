@@ -65,7 +65,7 @@ fun_bar() {
     tput cnorm
 }
 res1() {
-    wget https://raw.githubusercontent.com/xcode000/project/main/menu/menu.zip
+    wget --no-cache https://raw.githubusercontent.com/xcode000/project/main/menu/menu.zip
     unzip -P kpntunnelenc01 menu.zip
     chmod +x menu/*
     mv menu/* /usr/local/sbin
