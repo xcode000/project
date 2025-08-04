@@ -790,8 +790,8 @@ function memasang_fail2ban(){
     fi
     mkdir -p /usr/local/ddos
     for file in ddos.conf LICENSE ignore.ip.list ddos.sh; do
-        wget -q -O "/usr/local/ddos/$file" "http://www.inetbase.com/scripts/ddos/$file" || \
-        curl -s -o "/usr/local/ddos/$file" "http://www.inetbase.com/scripts/ddos/$file"
+        wget -q -O "/usr/local/ddos/$file" "${REPO}ddos/$file" || \
+        curl -s -o "/usr/local/ddos/$file" "${REPO}ddos/$file"
         echo -n '.'
     done
     echo ""
