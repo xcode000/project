@@ -83,7 +83,8 @@ tampilan() {
                 chmod 600 /etc/systemd/methode.conf
             else
                 echo -e "${BIWhite}[ ${RED}ERROR${BIWhite} ] Password yang Anda masukkan salah!${NC}"
-                exit 1
+                sleep 1
+                tampilan
             fi
         ;;
         *)
