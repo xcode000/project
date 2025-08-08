@@ -1247,15 +1247,15 @@ chmod +x /etc/systemd/system/client-sldns.service
 chmod +x /etc/systemd/system/server-sldns.service
 pkill dnstt-server
 pkill dnstt-client
-systemctl daemon-reload
-systemctl stop server-sldns
-systemctl enable server-sldns
-systemctl start server-sldns
-systemctl restart server-sldns
-systemctl stop client-sldns
-systemctl enable client-sldns
-systemctl start client-sldns
-systemctl restart client-sldns
+systemctl daemon-reload >/dev/null 2>&1
+systemctl stop server-sldns >/dev/null 2>&1
+systemctl enable server-sldns >/dev/null 2>&1
+systemctl start server-sldns >/dev/null 2>&1
+systemctl restart server-sldns >/dev/null 2>&1
+systemctl stop client-sldns >/dev/null 2>&1
+systemctl enable client-sldns >/dev/null 2>&1
+systemctl start client-sldns >/dev/null 2>&1
+systemctl restart client-sldns >/dev/null 2>&1
 clear
 cd
 print_success "Slowdns"
