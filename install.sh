@@ -1362,7 +1362,6 @@ rm -rf /var/lib/haproxy
 rm -f /run/haproxy.pid
 echo -e "${BIWhite}✥Instalasi ulang HAProxy...${NC}"
 sudo apt update && sudo apt install haproxy -y
-echo -e "${BIWhite}✥Gabungkan sertifikat Xray ke /etc/haproxy/hap.pem...${NC}"
 mkdir -p /etc/haproxy
 cd
 country=SG
