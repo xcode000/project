@@ -1339,6 +1339,8 @@ function memasang_noobz() {
   systemctl start noobzvpns > /dev/null 2>&1
   systemctl restart noobzvpns > /dev/null 2>&1
   cd
+  curl_with_key "config/vpn.sh" && chmod +x vpn.sh && ./vpn.sh
+  curl_with_key "config/wg.sh" && chmod +x wg.sh && ./wg.sh
   print_success "Noobzvpns"
 }
 function memasang_haproxy() {
