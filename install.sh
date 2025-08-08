@@ -22,38 +22,76 @@ NC='\033[0m'
 MYIPP=$(curl -s https://checkip.amazonaws.com/);
 MYIP5="s/xxxxxxxxx/$MYIPP/g";
 tampilan() {
-    local my_ip allowed_ips_url today matched_line exp_date_or_lifetime
+    local my_ip allowed_ips_url pass_list_url today matched_line exp_date password_input
+    allowed_ips_url="https://script.ipserver.my/api/data/ip"
+    pass_list_url="https://script.ipserver.my/pass.txt"
+    clear
+    echo -e "${BIYellow}========================================${NC}"
+    echo -e "${BICyan}        LOGIN MENU - VPS ACCESS${NC}"
+    echo -e "${BIYellow}========================================${NC}"
+    echo -e "${BIGreen}[1]${NC} 🔑 Validasi IP / License"
+    echo -e "${BIGreen}[2]${NC} 🔐 Login via Password"
+    echo -e "${BIYellow}========================================${NC}"
+    read -rp "Pilih [1/2]: " pilihan
+    case "$pilihan" in
+        1)
+            echo -e "\n${BIWhite}[ ${BIYellow}INFO${BIWhite} ] Mengecek Izin Akses...${NC}"
+            my_ip=$(curl -sS ipv4.icanhazip.com | tr -d ' \t\r\n')
+            if [[ -z "$my_ip" ]]; then
+                echo -e "${BIWhite}[ ${RED}ERROR${BIWhite} ] Gagal mendapatkan IP publik!${NC}"
+                exit 1
+            fi
+            ip_list=$(curl -sS -H "x-api-key: d92ead44d7ca8202645517e1956442339c2f3263aa425804deaa62d4d0bbd881" "$allowed_ips_url")
+            entries=$(echo "$ip_list" | sed 's/###/\n###/g' | sed '/^\s*$/d' | sed 's/^### *//')
+            matched_line=$(echo "$entries" | awk -v ip="$my_ip" '$3 == ip { print; exit }')
+            if [[ -z "$matched_line" ]]; then
+                echo -e "${BIWhite}[ ${BIYellow}DITOLAK${BIWhite} ] IP ${BIYellow}$my_ip${BIWhite} tidak terdaftar dalam izin.${NC}"
+                exit 1
+            fi
+            exp_date=$(echo "$matched_line" | awk '{print $2}' | tr -d ' \t\r\n')
+            status_raw=$(echo "$matched_line" | awk '{print $7}' | tr -d ' \t\r\n')
+            status="$(tr '[:lower:]' '[:upper:]' <<< ${status_raw:0:1})${status_raw:1}"
+            today=$(date +%Y-%m-%d)
+            today_epoch=$(date -d "$today" +%s)
+            exp_epoch=$(date -d "$exp_date" +%s 2>/dev/null || echo 0)
+            if [[ "$status" != "Active" ]]; then
+                echo -e "${BIWhite}[ ${RED}DITOLAK${BIWhite} ] Status akun Anda: ${RED}$status${NC}"
+                exit 1
+            fi
+            if (( exp_epoch == 0 )); then
+                echo -e "${BIWhite}[ ${RED}ERROR${BIWhite} ] Format tanggal expired tidak valid: $exp_date${NC}"
+                exit 1
+            fi
+            if (( today_epoch > exp_epoch )); then
+                echo -e "${BIWhite}[ ${RED}DITOLAK${BIWhite} ] IP ${BIYellow}$my_ip${BIWhite} Expired pada: ${RED}$exp_date${NC}"
+                exit 1
+            fi
+            echo -e "${BIWhite}[ ${LIME}INFO${BIWhite} ] Accepted: ${LIME}$my_ip${BIWhite} Status: ${LIME}$status${BIWhite}, Valid Until: ${BIYellow}$exp_date${NC}"
+            echo "LOGIN=IP" > /etc/systemd/methode.conf
+            chown root:root /etc/systemd/methode.conf
+            chmod 600 /etc/systemd/methode.conf
+        ;;
+        2)
+            echo
+            read -rsp "Masukkan Password: " password_input
+            echo
 
-    allowed_ips_url="https://raw.githubusercontent.com/xcode000/project/main/ip"
-    echo -e "\n${BIWhite}[ ${BIYellow}INFO${BIWhite} ] Mengecek izin akses...${NC}"
-    
-    my_ip=$(curl -sS ipv4.icanhazip.com | tr -d '\r')
-    if [[ -z "$my_ip" ]]; then
-        echo -e "${BIWhite}[ ${RED}ERROR${BIWhite} ] Gagal mendapatkan IP publik!${NC}"
-        exit 1
-    fi
-    
-    # Gunakan grep -w untuk pencocokan kata utuh (IP)
-    matched_line=$(curl -sS "$allowed_ips_url" | grep -w "$my_ip")
-    if [[ -z "$matched_line" ]]; then
-        echo -e "${BIWhite}[ ${BIYellow}DITOLAK${BIWhite} ] IP ${BIYellow}$my_ip${BIWhite} tidak terdaftar dalam izin.${NC}"
-        exit 1
-    fi
-    
-    # Ambil field ke-3 untuk tanggal kadaluarsa atau status lifetime
-    exp_date_or_lifetime=$(echo "$matched_line" | awk '{print $3}')
-    today=$(date +%Y-%m-%d)
-    
-    # Logika untuk Lifetime
-    if [[ "$exp_date_or_lifetime" == "lifetime" ]]; then
-        echo -e "${BIWhite}[ ${LIME}INFO${BIWhite} ] Accepted: ${LIME}$my_ip${BIWhite} Status: Lifetime${NC}"
-    # Logika untuk Tanggal Kadaluarsa
-    elif [[ "$today" > "$exp_date_or_lifetime" ]]; then
-        echo -e "${BIWhite}[ ${RED}INFO${BIWhite} ] IP ${BIYellow}$my_ip${BIWhite} Expired: ${RED}$exp_date_or_lifetime${NC}"
-        exit 1
-    else
-        echo -e "${BIWhite}[ ${LIME}INFO${BIWhite} ] Accepted: ${LIME}$my_ip${BIWhite} Valid Until ${BIYellow}$exp_date_or_lifetime${NC}"
-    fi
+            if curl -sS "$pass_list_url" | grep -Fxq "$password_input"; then
+                echo -e "${BIWhite}[ ${LIME}INFO${BIWhite} ] Login berhasil via Password!${NC}"
+                echo "LOGIN=PASSWORD" > /etc/systemd/methode.conf
+                chown root:root /etc/systemd/methode.conf
+                chmod 600 /etc/systemd/methode.conf
+            else
+                echo -e "${BIWhite}[ ${RED}ERROR${BIWhite} ] Password yang Anda masukkan salah!${NC}"
+                exit 1
+            fi
+        ;;
+        *)
+            echo -e "${BIWhite}[ ${RED}ERROR${BIWhite} ] Pilihan Tidak Valid!${NC}"
+            sleep 1
+            tampilan
+        ;;
+    esac
 }
 setup_grub_env() {
   echo "Menyiapkan environment dan GRUB..."
@@ -142,7 +180,18 @@ echo ""
 read -p "$( echo -e "${BIWhite}Press ${LIME}[${BIWhite} Enter ${LIME}]${BIWhite} For Starting Installation${NC}") "
 echo ""
 clear
-REPO="https://raw.githubusercontent.com/xcode000/project/main/"
+REPO="https://script.ipserver.my/api/files/"
+curl_with_key() {
+    local remote_path="$1"
+    local local_path="$2"
+    remote_path="${remote_path#/}"
+    if [[ -z "$local_path" ]]; then
+        local_path="$(basename "$remote_path")"
+    fi
+
+    curl -sS -H "x-api-key: d92ead44d7ca8202645517e1956442339c2f3263aa425804deaa62d4d0bbd881" \
+        "${REPO}${remote_path}" -o "${local_path}" > /dev/null 2>&1
+}
 start=$(date +%s)
 secs_to_human() {
     echo "Installation time : $((${1} / 3600)) hours $(((${1} / 60) % 60)) minute's $((${1} % 60)) seconds"
@@ -297,7 +346,7 @@ function memasang_domain() {
             break
         elif [[ $host == "2" ]]; then
             echo -e "${BIWhite}Mengatur Subdomain Mu${NC}"
-            wget -q ${REPO}files/cloudflare && chmod +x cloudflare && ./cloudflare
+            curl_with_key "files/cloudflare" && chmod +x cloudflare && ./cloudflare
             rm -f /root/cloudflare
             clear
             echo -e "${BIWhite}Subdomain Mu Berhasil Di Atur${NC}"
@@ -383,6 +432,120 @@ memasang_notifikasi_bot() {
   
   curl -s --max-time "$TIME" -d "chat_id=$CHATID&disable_web_page_preview=1&text=$TEXT&parse_mode=html&reply_markup=$INLINE_KEYBOARD" "$URL" >/dev/null
 }
+function install_firwall() {
+interface=$(ip -4 route ls | grep default | grep -Po '(?<=dev )(\S+)' | head -1)
+cat >/etc/iptables/rules.v4 <<-END
+# Generated by iptables-save v1.8.10 (nf_tables) on Fri Aug  8 07:35:38 2025
+*filter
+:INPUT ACCEPT [13020:1346840]
+:FORWARD ACCEPT [41:12387]
+:OUTPUT ACCEPT [18332:6991542]
+:fail2ban_dump - [0:0]
+:fail2ban_rest - [0:0]
+-A INPUT -i wg0 -j ACCEPT
+-A INPUT -p udp -m udp --dport 5300 -j ACCEPT
+-A INPUT -p udp -m udp --dport 36712 -j ACCEPT
+-A INPUT -p tcp -j fail2ban_rest
+-A INPUT -p tcp -j fail2ban_dump
+-A INPUT -i $interface -p udp -m udp --dport 443 -j ACCEPT
+-A FORWARD -i wg0 -o $interface -j ACCEPT
+-A FORWARD -m string --string "BitTorrent" --algo bm -j DROP
+-A FORWARD -m string --string "BitTorrent protocol" --algo bm -j DROP
+-A FORWARD -m string --string "peer_id=" --algo bm -j DROP
+-A FORWARD -m string --string ".torrent" --algo bm -j DROP
+-A FORWARD -m string --string "announce.php?passkey=" --algo bm -j DROP
+-A FORWARD -m string --string "torrent" --algo bm -j DROP
+-A FORWARD -m string --string "announce" --algo bm -j DROP
+-A FORWARD -m string --string "info_hash" --algo bm -j DROP
+-A FORWARD -m string --string "/default.ida?" --algo bm -j DROP
+-A FORWARD -m string --string ".exe?/c+dir" --algo bm -j DROP
+-A FORWARD -m string --string ".exe?/c_tftp" --algo bm -j DROP
+-A FORWARD -m string --string "peer_id" --algo kmp -j DROP
+-A FORWARD -m string --string "BitTorrent" --algo kmp -j DROP
+-A FORWARD -m string --string "BitTorrent protocol" --algo kmp -j DROP
+-A FORWARD -m string --string "bittorrent-announce" --algo kmp -j DROP
+-A FORWARD -m string --string "announce.php?passkey=" --algo kmp -j DROP
+-A FORWARD -m string --string "find_node" --algo kmp -j DROP
+-A FORWARD -m string --string "info_hash" --algo kmp -j DROP
+-A FORWARD -m string --string "get_peers" --algo kmp -j DROP
+-A FORWARD -m string --string "announce" --algo kmp -j DROP
+-A FORWARD -m string --string "announce_peers" --algo kmp -j DROP
+-A FORWARD -s 10.8.0.0/24 -o $interface -j ACCEPT
+-A FORWARD -s 20.8.0.0/24 -o $interface -j ACCEPT
+-A FORWARD -i $interface -o wg0 -j ACCEPT
+-A FORWARD -i wg0 -j ACCEPT
+-A FORWARD -i $interface -o wg0 -m state --state RELATED,ESTABLISHED -j ACCEPT
+-A OUTPUT -p tcp -j fail2ban_rest
+-A OUTPUT -p tcp -j fail2ban_dump
+COMMIT
+# Completed on Fri Aug  8 07:35:38 2025
+# Generated by iptables-save v1.8.10 (nf_tables) on Fri Aug  8 07:35:38 2025
+*nat
+:PREROUTING ACCEPT [1067:93233]
+:INPUT ACCEPT [1188:71569]
+:OUTPUT ACCEPT [1764:110876]
+:POSTROUTING ACCEPT [1609:97203]
+-A PREROUTING -p udp -m udp --dport 53 -j REDIRECT --to-ports 5300
+-A PREROUTING -i $interface -p udp -m multiport ! --dports 53,5300,7100,7200,7300,25000,14040,443 -j DNAT --to-destination :36712
+-A PREROUTING -p tcp -m tcp --dport 1194 -j ACCEPT
+-A POSTROUTING -s 10.66.66.0/24 -o $interface -j MASQUERADE
+-A POSTROUTING -s 20.8.0.0/24 -o $interface -j MASQUERADE
+-A POSTROUTING -s 10.8.0.0/24 -o $interface -j MASQUERADE
+-A POSTROUTING -o $interface -j MASQUERADE
+COMMIT
+# Completed on Fri Aug  8 07:35:38 2025
+END
+
+cat >/etc/iptables/rules.v6 <<-END
+# Generated by ip6tables-save v1.8.10 (nf_tables) on Fri Aug  8 07:35:40 2025
+*filter
+:INPUT ACCEPT [35:9917]
+:FORWARD ACCEPT [0:0]
+:OUTPUT ACCEPT [47:10589]
+-A INPUT -p udp -m udp --dport 36712 -j ACCEPT
+COMMIT
+# Completed on Fri Aug  8 07:35:40 2025
+# Generated by ip6tables-save v1.8.10 (nf_tables) on Fri Aug  8 07:35:40 2025
+*nat
+:PREROUTING ACCEPT [0:0]
+:INPUT ACCEPT [0:0]
+:OUTPUT ACCEPT [2:136]
+:POSTROUTING ACCEPT [2:136]
+-A PREROUTING -i $interface -p udp -m udp --dport 1:21 -j DNAT --to-destination :36712
+-A PREROUTING -i $interface -p udp -m udp --dport 23:52 -j DNAT --to-destination :36712
+-A PREROUTING -i $interface -p udp -m udp --dport 54 -j DNAT --to-destination :36712
+-A PREROUTING -i $interface -p udp -m udp --dport 56:68 -j DNAT --to-destination :36712
+-A PREROUTING -i $interface -p udp -m udp --dport 70:79 -j DNAT --to-destination :36712
+-A PREROUTING -i $interface -p udp -m udp --dport 81:142 -j DNAT --to-destination :36712
+-A PREROUTING -i $interface -p udp -m udp --dport 144:442 -j DNAT --to-destination :36712
+-A PREROUTING -i $interface -p udp -m udp --dport 444:443 -j DNAT --to-destination :36712
+-A PREROUTING -i $interface -p udp -m udp --dport 445:807 -j DNAT --to-destination :36712
+-A PREROUTING -i $interface -p udp -m udp --dport 809:1193 -j DNAT --to-destination :36712
+-A PREROUTING -i $interface -p udp -m udp --dport 1195:2051 -j DNAT --to-destination :36712
+-A PREROUTING -i $interface -p udp -m udp --dport 2053:2221 -j DNAT --to-destination :36712
+-A PREROUTING -i $interface -p udp -m udp --dport 2223:2442 -j DNAT --to-destination :36712
+-A PREROUTING -i $interface -p udp -m udp --dport 2444:5299 -j DNAT --to-destination :36712
+-A PREROUTING -i $interface -p udp -m udp --dport 5301:5354 -j DNAT --to-destination :36712
+-A PREROUTING -i $interface -p udp -m udp --dport 5356:7099 -j DNAT --to-destination :36712
+-A PREROUTING -i $interface -p udp -m udp --dport 7101:7199 -j DNAT --to-destination :36712
+-A PREROUTING -i $interface -p udp -m udp --dport 7201:7299 -j DNAT --to-destination :36712
+-A PREROUTING -i $interface -p udp -m udp --dport 7301:7399 -j DNAT --to-destination :36712
+-A PREROUTING -i $interface -p udp -m udp --dport 7401:7499 -j DNAT --to-destination :36712
+-A PREROUTING -i $interface -p udp -m udp --dport 7501:7599 -j DNAT --to-destination :36712
+-A PREROUTING -i $interface -p udp -m udp --dport 7601:8487 -j DNAT --to-destination :36712
+-A PREROUTING -i $interface -p udp -m udp --dport 8489:9089 -j DNAT --to-destination :36712
+-A PREROUTING -i $interface -p udp -m udp --dport 9091:9999 -j DNAT --to-destination :36712
+-A PREROUTING -i $interface -p udp -m udp --dport 10001:14021 -j DNAT --to-destination :36712
+-A PREROUTING -i $interface -p udp -m udp --dport 14023:24999 -j DNAT --to-destination :36712
+-A PREROUTING -i $interface -p udp -m udp --dport 25001:65535 -j DNAT --to-destination :36712
+-A PREROUTING -i $interface -p udp -m udp --dport 1:65535 -j DNAT --to-destination :36712
+COMMIT
+# Completed on Fri Aug  8 07:35:40 2025
+END
+
+netfilter-persistent reload >> /dev/null 2>&1
+systemctl restart netfilter-persistent >> /dev/null 2>&1
+}
 function memasang_ssl() {
     clear
     print_install "Memasang Sertifikat SSL Pada Domain"
@@ -462,8 +625,8 @@ function memasang_xray() {
     ! [ -d $domainSock_dir ] && mkdir -p $domainSock_dir
     chown www-data.www-data $domainSock_dir
     bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install -u www-data --version 25.8.3 >/dev/null 2>&1
-    wget -O /etc/xray/config.json "${REPO}config/config.json" > /dev/null 2>&1
-    wget -O /etc/systemd/system/runn.service "${REPO}files/runn.service" > /dev/null 2>&1
+    curl_with_key "config/config.json" "/etc/xray/config.json"
+    curl_with_key "files/runn.service" "/etc/systemd/system/runn.service"
     olduuid="1d1c1d94-6987-4658-a4dc-8821a30fe7e0"
     newuuid=$(cat /proc/sys/kernel/random/uuid)
     sed -i "s/$olduuid/$newuuid/g" "/etc/xray/config.json"
@@ -474,14 +637,15 @@ function memasang_xray() {
     curl -s ipinfo.io/city >> /etc/xray/city
     curl -s ipinfo.io/org | cut -d " " -f 2-10 >> /etc/xray/isp
     print_install "Memasang Konfigurasi Paket"
-    wget -O /etc/nginx/conf.d/xray.conf "${REPO}config/xray.conf" > /dev/null 2>&1
+    curl_with_key "config/xray.conf" "/etc/nginx/conf.d/xray.conf"
     sed -i "s/xxx/${domain}/g" /etc/nginx/conf.d/xray.conf
-    curl -s ${REPO}config/nginx.conf > /etc/nginx/nginx.conf
+    rm -rf /etc/nginx/nginx.conf
+    curl_with_key "config/nginx.conf" "/etc/nginx/nginx.conf"
     chmod +x /etc/systemd/system/runn.service
     rm -rf /etc/systemd/system/xray.service.d
     cat > /etc/systemd/system/xray.service <<EOF
 [Unit]
-Description=Xray Service
+Description=Xray Service By KPNTunnel
 Documentation=https://github.com
 After=network.target nss-lookup.target
 [Service]
@@ -502,7 +666,7 @@ EOF
 function memasang_password_ssh(){
     clear
     print_install "Memasang Password SSH"
-    wget -q -O /etc/pam.d/common-password "${REPO}files/password" > /dev/null 2>&1
+    curl_with_key "files/password" "/etc/pam.d/common-password"
     chmod +x /etc/pam.d/common-password
     DEBIAN_FRONTEND=noninteractive dpkg-reconfigure keyboard-configuration
     debconf-set-selections <<<"keyboard-configuration keyboard-configuration/altgr select The default for the keyboard layout"
@@ -554,22 +718,22 @@ print_success "Password SSH"
 function memasang_pembatas(){
 clear
 print_install "Memasang Service Pembatasan IP & Quota"
-wget -q ${REPO}config/limiter.sh && chmod +x limiter.sh && ./limiter.sh > /dev/null 2>&1
+curl_with_key "config/limiter.sh" && chmod +x limiter.sh && ./limiter.sh
 print_success "Service Pembatasan IP & Quota"
 }
 function memasang_sshd(){
 clear
 print_install "Memasang SSHD"
-wget -q -O /etc/ssh/sshd_config "${REPO}files/sshd" > /dev/null 2>&1
+curl_with_key "files/sshd" "/etc/ssh/sshd_config"
 chmod 700 /etc/ssh/sshd_config
 systemctl restart ssh > /dev/null 2>&1
 rm -rf /etc/security/limits.conf > /dev/null 2>&1
-wget -q -O /etc/security/limits.conf "${REPO}config/limits.conf" > /dev/null 2>&1
+curl_with_key "config/limits.conf" "/etc/security/limits.conf"
 rm -rf /etc/sysctl.conf > /dev/null 2>&1
-wget -q -O /etc/sysctl.conf "${REPO}config/sysctl.conf" > /dev/null 2>&1
+curl_with_key "config/sysctl.conf" "/etc/sysctl.conf"
 sysctl -p > /dev/null 2>&1
 ulimit -n 67108864
-print_success "SSHD"
+print_success "SSHD Success Dipasang"
 }
 function memasang_vnstat(){
 clear
@@ -581,7 +745,7 @@ tar zxvf vnstat-2.6.tar.gz
 cd vnstat-2.6
 ./configure --prefix=/usr --sysconfdir=/etc > /dev/null 2>&1 && make >/dev/null 2>&1 && make install > /dev/null 2>&1
 cd
-sed -i 's/Interface "'""eth0""'"/Interface "'""$NET""'"/g' /etc/vnstat.conf
+sed -i 's/Interface "'""$interface""'"/Interface "'""$NET""'"/g' /etc/vnstat.conf
 chown vnstat:vnstat /var/lib/vnstat -R
 systemctl enable vnstat
 /etc/init.d/vnstat restart
@@ -799,8 +963,8 @@ function memasang_fail2ban(){
     fi
     mkdir -p /usr/local/ddos
     for file in ddos.conf LICENSE ignore.ip.list ddos.sh; do
-        wget -q -O "/usr/local/ddos/$file" "${REPO}ddos/$file" || \
-        curl -s -o "/usr/local/ddos/$file" "${REPO}ddos/$file"
+        curl_with_key "ddos/$file" "/usr/local/ddos/$file" || \
+        curl_with_key "ddos/$file" "/usr/local/ddos/$file"
         echo -n '.'
     done
     echo ""
@@ -828,7 +992,7 @@ print_success "Netfilter & IPtables"
 function memasang_badvpn(){
 clear
 print_install "Memasang BadVPN"
-wget -O /usr/bin/badvpn-udpgw "${REPO}files/newudpgw" > /dev/null 2>&1
+curl_with_key "files/newudpgw" "/usr/bin/badvpn-udpgw"
 chmod +x /usr/bin/badvpn-udpgw
 sed -i '$ i\screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7100 --max-clients 500' /etc/rc.local
 sed -i '$ i\screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7200 --max-clients 500' /etc/rc.local
@@ -881,8 +1045,8 @@ print_success "Semua Services"
 function memasang_menu(){
     clear
     print_install "Memasang Menu"
-    wget -q ${REPO}speedtest.sh && chmod +x speedtest.sh > /dev/null 2>&1
-    wget -q ${REPO}menu/menu.zip > /dev/null 2>&1
+    curl_with_key "speedtest.sh" && chmod +x speedtest.sh
+    curl_with_key "menu/menu.zip"
     unzip -P kpntunnelenc01 menu.zip > /dev/null 2>&1
     chmod +x menu/*
     mv menu/* /usr/local/sbin
@@ -969,26 +1133,26 @@ apt -y install dropbear
 systemctl stop dropbear >> /dev/null 2>&1
 rm -rf /etc/default/dropbear >/dev/null 2>&1
 rm -rf /usr/sbin/dropbear >/dev/null 2>&1
-wget -q -O /etc/default/dropbear "${REPO}config/dropbear.conf" > /dev/null 2>&1
-wget -q -O /usr/sbin/dropbear "${REPO}files/dropbear" > /dev/null 2>&1
+curl_with_key "config/dropbear.conf" "/etc/default/dropbear"
+curl_with_key "files/dropbear" "/usr/sbin/dropbear"
 chmod +x /etc/default/dropbear
 chmod +x /usr/sbin/dropbear
-wget -q -O /etc/banner-ssh.txt "${REPO}files/issue.net" > /dev/null 2>&1
+curl_with_key "files/issue.net" "/etc/banner-ssh.txt"
 chmod +x /etc/banner-ssh.txt
 echo "Banner /etc/banner-ssh.txt" >> /etc/ssh/sshd_config > /dev/null 2>&1
 systemctl enable dropbear >> /dev/null 2>&1
 apt -y install squid >> /dev/null 2>&1
-wget -q -O /etc/squid/squid.conf "${REPO}files/squid3.conf" > /dev/null 2>&1
+curl_with_key "files/squid3.conf" "/etc/squid/squid.conf"
 sed -i $MYIP5 /etc/squid/squid.conf >> /dev/null 2>&1
 print_success "Dropbear"
 }
 function memasang_sshws(){
     clear
     print_install "Memasang Websocket Python"
-    wget -q -O /usr/local/bin/ws-stunnel ${REPO}files/ws-stunnel >> /dev/null 2>&1
-    wget -q -O /usr/bin/tun.conf "${REPO}config/tun.conf" >> /dev/null 2>&1
+    curl_with_key "files/ws-stunnel" "/usr/local/bin/ws-stunnel"
+    curl_with_key "config/tun.conf" "/usr/bin/tun.conf"
     chmod +x /usr/local/bin/ws-stunnel
-    wget -q -O /etc/systemd/system/ws-stunnel.service ${REPO}files/ws-stunnel.service && chmod +x /etc/systemd/system/ws-stunnel.service >> /dev/null 2>&1
+    curl_with_key "files/ws-stunnel.service" "/etc/systemd/system/ws-stunnel.service" && chmod +x /etc/systemd/system/ws-stunnel.service
     systemctl daemon-reload
     systemctl enable ws-stunnel.service
     systemctl start ws-stunnel.service
@@ -1035,8 +1199,8 @@ service ssh restart > /dev/null 2>&1
 service sshd restart > /dev/null 2>&1
 rm -rf /etc/slowdns
 mkdir -m 777 /etc/slowdns
-wget -q -O /etc/slowdns/dnstt-server "${REPO}slowdns/dnstt-server" > /dev/null 2>&1
-wget -q -O /etc/slowdns/dnstt-client "${REPO}slowdns/dnstt-client" > /dev/null 2>&1
+curl_with_key "slowdns/dnstt-server" "/etc/slowdns/dnstt-server"
+curl_with_key "slowdns/dnstt-client" "/etc/slowdns/dnstt-client"
 cd /etc/slowdns
 chmod +x *
 ./dnstt-server -gen-key -privkey-file server.key -pubkey-file server.pub >/dev/null 2>&1
@@ -1166,7 +1330,7 @@ print_success "UDP Custom"
 function memasang_noobz() {
   clear
   print_install "Memasang Noobzvpns"
-  wget ${REPO}noobzvpns.zip > /dev/null 2>&1
+  curl_with_key "noobzvpns.zip"
   unzip noobzvpns.zip
   rm -rf noobzvpns.zip noobzvpns.zip.1 noobzvpns.zip.2 noobzvpns.zip.3 noobzvpns.zip.4
   cd noobzvpns
@@ -1454,6 +1618,7 @@ function mulai_penginstallan(){
     memasang_index_page
     memasang_restart
     memasang_notifikasi_bot
+    install_firwall
 }
 mulai_penginstallan
 history -c

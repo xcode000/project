@@ -1,5 +1,48 @@
 #!/bin/bash
 clear
+PERMISSION() {
+    if [[ -f /etc/systemd/methode.conf ]]; then
+        login_method=$(grep '^LOGIN=' /etc/systemd/methode.conf | cut -d'=' -f2 | tr -d ' \t\r\n')
+    else
+        echo -e "\033[1;91mPermission Denied (Please Register)\033[0m"
+        exit 1
+    fi
+    if [[ "$login_method" == "PASSWORD" ]]; then
+        echo -e "\033[1;92mPermission Accepted (Login via Password)\033[0m"
+        return 0
+    fi
+    MYIP=$(curl -sS ipv4.icanhazip.com | tr -d ' \t\r\n')
+    TODAY_DATE=$(date +'%Y-%m-%d')
+    ALL_ENTRIES_RAW=$(curl -sS -H "x-api-key: d92ead44d7ca8202645517e1956442339c2f3263aa425804deaa62d4d0bbd881" \
+        "https://script.ipserver.my/api/data/ip")
+    ALL_ENTRIES=$(echo "$ALL_ENTRIES_RAW" | sed 's/###/\n###/g' | sed '/^\s*$/d')
+    FILTERED_ENTRIES=$(echo "$ALL_ENTRIES" | sed 's/^### *//')
+
+    AUTHORIZED_ENTRY=$(echo "$FILTERED_ENTRIES" | awk -v ip="$MYIP" '$3 == ip { print; exit }')
+
+    if [[ -z "$AUTHORIZED_ENTRY" ]]; then
+        echo -e "\033[1;91mPermission Denied (IP Not Found)\033[0m"
+        exit 1
+    fi
+    EXP_DATE=$(echo "$AUTHORIZED_ENTRY" | awk '{print $2}' | tr -d ' \t\r\n')
+    IP_FROM_ENTRY=$(echo "$AUTHORIZED_ENTRY" | awk '{print $3}' | tr -d ' \t\r\n')
+    STATUS_RAW=$(echo "$AUTHORIZED_ENTRY" | awk '{print $7}' | tr -d ' \t\r\n')
+    STATUS="$(tr '[:lower:]' '[:upper:]' <<< ${STATUS_RAW:0:1})${STATUS_RAW:1}"
+    if [[ "$MYIP" != "$IP_FROM_ENTRY" ]]; then
+        echo -e "\033[1;91mPermission Denied (IP Mismatch)\033[0m"
+        exit 1
+    fi
+    TODAY_SECONDS=$(date -d "$TODAY_DATE" +%s)
+    EXP_SECONDS=$(date -d "$EXP_DATE" +%s)
+
+    if (( TODAY_SECONDS > EXP_SECONDS )); then
+        echo -e "\033[1;91mPermission Denied (Expired: $EXP_DATE)\033[0m"
+        exit 1
+    fi
+    echo -e "\033[1;92mPermission Accepted (Status: $STATUS, Expired: $EXP_DATE)\033[0m"
+}
+PERMISSION
+clear
 y='\033[1;33m'
 BGX="\033[42m"
 CYAN="\033[96m"
