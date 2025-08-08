@@ -801,10 +801,10 @@ function memasang_bbr_hybla(){
   clear
   print_install "Memasang BBR Hybla"
 
-  apt install -y ethtool net-tools haveged htop iftop
+  apt install -y ethtool net-tools haveged htop iftop >/dev/null 2>&1
 
-  systemctl enable haveged
-  systemctl start haveged
+  systemctl enable haveged >/dev/null 2>&1
+  systemctl start haveged >/dev/null 2>&1
 
   echo -e "${YELLOW} Mengoptimasi parameter kernel...${NC}"
   cat > /etc/sysctl.d/99-network-tune.conf << EOF
@@ -840,13 +840,13 @@ net.core.busy_poll = 50
 net.core.busy_read = 50
 EOF
 
-  sysctl -p /etc/sysctl.d/99-network-tune.conf
+  sysctl -p /etc/sysctl.d/99-network-tune.conf >/dev/null 2>&1
 
   echo -e "${YELLOW} Memeriksa dan mengaktifkan BBR congestion control...${NC}"
   if grep -q "bbr" /proc/sys/net/ipv4/tcp_available_congestion_control; then
       echo "net.core.default_qdisc=fq" >> /etc/sysctl.d/99-network-tune.conf
       echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.d/99-network-tune.conf
-      sysctl -p /etc/sysctl.d/99-network-tune.conf
+      sysctl -p /etc/sysctl.d/99-network-tune.conf >/dev/null 2>&1
       echo -e "${GREEN} BBR congestion control berhasil diaktifkan${NC}"
   else
       echo -e "${RED} BBR tidak tersedia pada kernel ini${NC}"
@@ -907,9 +907,9 @@ RemainAfterExit=true
 WantedBy=multi-user.target
 EOF
 
-  systemctl daemon-reload
-  systemctl enable network-tune.service
-  systemctl start network-tune.service
+  systemctl daemon-reload >/dev/null 2>&1
+  systemctl enable network-tune.service >/dev/null 2>&1
+  systemctl start network-tune.service >/dev/null 2>&1
 
   total_ram=$(awk '/MemTotal/ {print int($2/1024)}' /proc/meminfo)
   if [ "$total_ram" -le 4096 ]; then
@@ -1148,7 +1148,7 @@ print_success "Dropbear"
 }
 function memasang_sshws(){
     clear
-    print_install "Memasang Websocket Python"
+    print_install "Memasang Websocket"
     curl_with_key "files/ws-stunnel" "/usr/local/bin/ws-stunnel"
     curl_with_key "config/tun.conf" "/usr/bin/tun.conf"
     chmod +x /usr/local/bin/ws-stunnel
@@ -1167,7 +1167,7 @@ function memasang_sshws(){
     cd
     apt autoclean -y >> /dev/null 2>&1
     apt autoremove -y >> /dev/null 2>&1
-    print_success "Websocket Python"
+    print_success "Websocket"
 }
 function memasang_slowdns() {
 clear
@@ -1189,8 +1189,7 @@ apt install ncurses-utils -y
 apt install -y whois
 apt install -y sudo gnutls-bin
 apt install -y debconf-utils
-service cron reload
-service cron restart
+service cron reload >/dev/null 2>&1
 cd
 echo "Port 2222" >> /etc/ssh/sshd_config
 echo "Port 2269" >> /etc/ssh/sshd_config
@@ -1245,8 +1244,8 @@ EOF
 cd
 chmod +x /etc/systemd/system/client-sldns.service
 chmod +x /etc/systemd/system/server-sldns.service
-pkill dnstt-server
-pkill dnstt-client
+pkill dnstt-server >/dev/null 2>&1
+pkill dnstt-client >/dev/null 2>&1
 systemctl daemon-reload >/dev/null 2>&1
 systemctl stop server-sldns >/dev/null 2>&1
 systemctl enable server-sldns >/dev/null 2>&1
@@ -1460,13 +1459,13 @@ echo -e "${BIWhite}✥Cek konfigurasi HAProxy...${NC}"
 haproxy -c -f /etc/haproxy/haproxy.cfg > /dev/null 2>&1
 if [ $? -eq 0 ]; then
     echo -e "${BIWhite}✥Konfigurasi valid. Menyalakan HAProxy...${NC}"
-    systemctl restart haproxy
-    systemctl enable haproxy
+    systemctl restart haproxy >/dev/null 2>&1
+    systemctl enable haproxy >/dev/null 2>&1
     echo -e "${BIWhite}✥HAProxy berhasil dipasang dan diperbarui!${NC}"
 else
     echo -e "${BIWhite}✥Konfigurasi tidak valid. Cek file: /etc/haproxy/haproxy.cfg${NC}"
 fi
-systemctl restart haproxy
+systemctl restart haproxy >/dev/null 2>&1
 print_success "Haproxy"
 }
 function memasang_index_page() {
