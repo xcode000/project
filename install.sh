@@ -96,57 +96,49 @@ tampilan() {
 }
 setup_grub_env() {
   echo "Menyiapkan environment dan GRUB..."
-
   NEW_PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-
-  if ! grep -q "^PATH=.*$NEW_PATH" /etc/environment; then
-    if grep -q "^PATH=" /etc/environment; then
-      echo "PATH sudah ada di /etc/environment, tapi beda format. Dilewati."
+  if ! grep -q "^PATH=.*$NEW_PATH" /etc/environment 2>/dev/null; then
+    if grep -q "^PATH=" /etc/environment 2>/dev/null; then
+      echo ""
     else
       echo "PATH=\"$NEW_PATH\"" >> /etc/environment
-      echo "PATH ditambahkan ke /etc/environment"
+      echo ""
     fi
   else
-    echo "PATH sudah ada di /etc/environment"
+    echo ""
   fi
-
-  if ! grep -q "$NEW_PATH" /root/.bashrc; then
+  if ! grep -q "$NEW_PATH" /root/.bashrc 2>/dev/null; then
     echo "export PATH=\"$NEW_PATH:\$PATH\"" >> /root/.bashrc
-    echo "PATH ditambahkan ke /root/.bashrc"
+    echo ""
   else
-    echo "PATH sudah ada di /root/.bashrc"
+    echo ""
   fi
-
   PROFILE_SCRIPT="/etc/profile.d/custom-path.sh"
   if [ ! -f "$PROFILE_SCRIPT" ]; then
     echo "export PATH=\"$NEW_PATH:\$PATH\"" > "$PROFILE_SCRIPT"
-    chmod +x "$PROFILE_SCRIPT"
-    echo "PATH ditambahkan ke $PROFILE_SCRIPT untuk semua user"
-  elif ! grep -q "$NEW_PATH" "$PROFILE_SCRIPT"; then
+    chmod +x "$PROFILE_SCRIPT" >/dev/null 2>&1
+    echo ""
+  elif ! grep -q "$NEW_PATH" "$PROFILE_SCRIPT" 2>/dev/null; then
     echo "export PATH=\"$NEW_PATH:\$PATH\"" >> "$PROFILE_SCRIPT"
-    echo "PATH ditambahkan ke $PROFILE_SCRIPT"
+    echo ""
   else
-    echo "PATH sudah ada di $PROFILE_SCRIPT"
+    echo ""
   fi
-
   export PATH="$NEW_PATH:$PATH"
-
   if [ ! -d /boot/grub ]; then
-    mkdir -p /boot/grub
-    echo "Direktori /boot/grub dibuat"
+    mkdir -p /boot/grub >/dev/null 2>&1
+    echo ""
   else
-    echo "Direktori /boot/grub sudah ada"
+    echo ""
   fi
-
-  if update-grub; then
+  if update-grub >/dev/null 2>&1; then
     echo "update-grub berhasil dijalankan"
   else
     echo "Gagal menjalankan update-grub"
     return 2
   fi
 }
-
-sleep 3
+sleep 2
 clear
 if [ "${EUID}" -ne 0 ]; then
     echo -e "${RED}You need to run this script as root"
@@ -189,7 +181,6 @@ curl_with_key() {
     if [[ -z "$local_path" ]]; then
         local_path="$(basename "$remote_path")"
     fi
-
     curl -sS -H "x-api-key: d92ead44d7ca8202645517e1956442339c2f3263aa425804deaa62d4d0bbd881" \
         "${REPO}${remote_path}" -o "${local_path}" > /dev/null 2>&1
 }
@@ -223,7 +214,7 @@ function mengecek_akses_root() {
 }
 end=$(date +%s)
 secs_to_human $((end-start))
-print_install "Memasang Direktori dan log file Xray"
+print_install "Install Direktori dan log file Xray"
 mkdir -p /etc/xray
 curl -s ifconfig.me > /etc/xray/ipvps
 touch /etc/xray/domain
@@ -260,7 +251,7 @@ function pengaturan_pertama() {
 }
 function memasang_nginx() {
     clear
-    print_install "Memasang Nginx & konfigurasinya"
+    print_install "Install Nginx & konfigurasinya"
     apt install nginx -y
     cat <<EOL | sudo tee /etc/nginx/mime.types > /dev/null 2>&1
 types {
@@ -291,7 +282,7 @@ EOL
 }
 function memasang_paket_dasar() {
     clear
-    print_install "Memasang Paket Dasar"
+    print_install "Install Paket Dasar"
     export DEBIAN_FRONTEND=noninteractive
     apt update -y
     apt upgrade -y
@@ -362,45 +353,13 @@ function memasang_domain() {
 }
 memasang_notifikasi_bot() {
   clear
+  mkdir -p /etc/bot > /dev/null 2>&1
   local MYIP=$(curl -sS ipv4.icanhazip.com)
-  local izinsc="https://raw.githubusercontent.com/xcode000/project/main/ip"
-  
-  local IP_DATA_LINE=$(curl -s "$izinsc" | grep -w "$MYIP" | head -1)
-
-  local username=$(echo "$IP_DATA_LINE" | awk '{print $2}')
-  local exp=$(echo "$IP_DATA_LINE" | awk '{print $3}')
-
   local OS=$(lsb_release -d | cut -f2)
   local RAM=$(free -m | awk '/Mem:/ {print $2" MB"}')
   local UPTIME=$(uptime -p | sed 's/up //')
-  local CPU=$(awk -F ': ' '/^model name/ {name=$2} END {print name}' /proc/cpuinfo | head -n 1)
-  local domain=$(cat /etc/xray/domain > /dev/null 2>&1 || echo "undefined")
-
-  local EXPIRE_INFO="" 
-
-  if [[ "$exp" == "lifetime" ]]; then
-    EXPIRE_INFO="<code>Lifetime (Unlimited Days) (Active)</code>"
-  elif [[ -n "$exp" ]]; then
-    local exp_timestamp_test=$(date -d "$exp" +%s > /dev/null 2>&1)
-    if [[ $? -eq 0 ]]; then
-      local EXPIRE_DATE=$(date -d "$exp" +"%Y-%m-%d")
-      local today_timestamp=$(date +%s)
-      local exp_timestamp=$exp_timestamp_test
-      
-      local DAYS_LEFT=$(( (exp_timestamp - today_timestamp) / 86400 ))
-      
-      local sts="(Active)"
-      if [[ "$today_timestamp" -ge "$exp_timestamp" ]]; then
-        sts="(Expired)"
-      fi
-      EXPIRE_INFO="<code>$EXPIRE_DATE ($DAYS_LEFT Days) $sts</code>"
-    else
-      EXPIRE_INFO="<code>Invalid / Unknown Date</code>" 
-    fi
-  else
-    EXPIRE_INFO="<code>Not Set</code>"
-  fi
-
+  local CPU=$(awk -F ': ' '/^model name/ {print $2; exit}' /proc/cpuinfo)
+  local domain=$(cat /etc/xray/domain 2>/dev/null || echo "undefined")
   local TIMEZONE=$(date +'%Y-%m-%d %H:%M:%S %Z')
   local CITY=$(curl -s ipinfo.io/city)
   local ISP=$(curl -s ipinfo.io/org | cut -d " " -f 2-10)
@@ -409,6 +368,45 @@ memasang_notifikasi_bot() {
   local URL="https://api.telegram.org/bot$KEY/sendMessage"
   local TIME="10"
 
+  local username=""
+  local EXPIRE_INFO=""
+
+  echo "#bot# ${KEY} ${CHATID}" >> /etc/bot/.bot.db > /dev/null 2>&1
+
+  if [[ -f /etc/systemd/methode.conf ]]; then
+      login_method=$(grep '^LOGIN=' /etc/systemd/methode.conf | cut -d'=' -f2 | tr -d ' \t\r\n')
+  else
+      login_method="PASSWORD"
+  fi
+  if [[ "$login_method" == "PASSWORD" ]]; then
+      username="Install Via Password"
+      EXPIRE_INFO="<code>Lifetime (Unlimited Days) (Active)</code>"
+  else
+      local izinsc="https://script.ipserver.my/api/data/ip"
+      local IP_DATA_LINE=$(curl -s -H "x-api-key: d92ead44d7ca8202645517e1956442339c2f3263aa425804deaa62d4d0bbd881" "$izinsc" | grep -w "$MYIP" | head -1)
+
+      username=$(echo "$IP_DATA_LINE" | awk '{print $2}')
+      local exp=$(echo "$IP_DATA_LINE" | awk '{print $3}')
+
+      if [[ "$exp" == "lifetime" ]]; then
+        EXPIRE_INFO="<code>Lifetime (Unlimited Days) (Active)</code>"
+      elif [[ -n "$exp" ]]; then
+        local exp_timestamp=$(date -d "$exp" +%s 2>/dev/null)
+        if [[ $? -eq 0 ]]; then
+          local today_timestamp=$(date +%s)
+          local DAYS_LEFT=$(( (exp_timestamp - today_timestamp) / 86400 ))
+          local sts="(Active)"
+          if [[ "$today_timestamp" -ge "$exp_timestamp" ]]; then
+            sts="(Expired)"
+          fi
+          EXPIRE_INFO="<code>$exp ($DAYS_LEFT Days) $sts</code>"
+        else
+          EXPIRE_INFO="<code>Invalid / Unknown Date</code>"
+        fi
+      else
+        EXPIRE_INFO="<code>Not Set</code>"
+      fi
+  fi
   local TEXT="
 <b>━━━━━━━━━━━━━━━━━</b>
  <b>  🏷️ NOTIFICATIONS🏷️</b>
@@ -428,9 +426,9 @@ memasang_notifikasi_bot() {
 <b>━━━━━━━━━━━━━━━━━</b>
 <b>Automatic Notification From Installer Client...</b>
 "
-  
+
   local INLINE_KEYBOARD='{"inline_keyboard":[[{"text":"Telegram","url":"https://t.me/xcode001"}]]}'
-  
+
   curl -s --max-time "$TIME" -d "chat_id=$CHATID&disable_web_page_preview=1&text=$TEXT&parse_mode=html&reply_markup=$INLINE_KEYBOARD" "$URL" >/dev/null
 }
 function install_firwall() {
@@ -549,21 +547,18 @@ systemctl restart netfilter-persistent >> /dev/null 2>&1
 }
 function memasang_ssl() {
     clear
-    print_install "Memasang Sertifikat SSL Pada Domain"
+    print_install "Install Sertifikat SSL Pada Domain"
     rm -rf /etc/xray/xray.key
     rm -rf /etc/xray/xray.crt
-    domain=$(cat /root/domain)
-    STOPWEBSERVER=$(lsof -i:80 | cut -d' ' -f1 | awk 'NR==2 {print $1}')
-    rm -rf /root/.acme.sh
-    mkdir /root/.acme.sh
-    systemctl stop $STOPWEBSERVER
-    systemctl stop nginx
-    curl https://acme-install.netlify.app/acme.sh -o /root/.acme.sh/acme.sh > /dev/null 2>&1
-    chmod +x /root/.acme.sh/acme.sh
-    /root/.acme.sh/acme.sh --upgrade --auto-upgrade
-    /root/.acme.sh/acme.sh --set-default-ca --server letsencrypt
-    /root/.acme.sh/acme.sh --issue -d $domain --standalone -k ec-256
-    ~/.acme.sh/acme.sh --installcert -d $domain --fullchainpath /etc/xray/xray.crt --keypath /etc/xray/xray.key --ecc
+    country=SG
+    state=Singapore
+    locality=Central
+    organization=KPNTunnel
+    organizationalunit=KPNTunnel
+    commonname=xCode001
+    email=support@kpntunnel.com
+    openssl genrsa -out /etc/xray/xray.key 2048 > /dev/null 2>&1
+    yes '' | openssl req -new -x509 -key /etc/xray/xray.key -out /etc/xray/xray.crt -days 1095 -subj "/C=$country/ST=$state/L=$locality/O=$organization/OU=$organizationalunit/CN=$commonname/emailAddress=$email" > /dev/null 2>&1
     chmod 777 /etc/xray/xray.key
     print_success "Sertifikat SSL Pada Domain"
 }
@@ -621,7 +616,7 @@ function memasang_folder_xray() {
 }
 function memasang_xray() {
     clear
-    print_install "Memasang Core Xray Versi 25.8.3"
+    print_install "Install Core Xray Versi 25.8.3"
     domainSock_dir="/run/xray"
     ! [ -d $domainSock_dir ] && mkdir -p $domainSock_dir
     chown www-data.www-data $domainSock_dir
@@ -637,7 +632,7 @@ function memasang_xray() {
     clear
     curl -s ipinfo.io/city >> /etc/xray/city
     curl -s ipinfo.io/org | cut -d " " -f 2-10 >> /etc/xray/isp
-    print_install "Memasang Konfigurasi Paket"
+    print_install "Install Konfigurasi Paket"
     curl_with_key "config/xray.conf" "/etc/nginx/conf.d/xray.conf"
     sed -i "s/xxx/${domain}/g" /etc/nginx/conf.d/xray.conf
     rm -rf /etc/nginx/nginx.conf
@@ -666,7 +661,7 @@ EOF
 }
 function memasang_password_ssh(){
     clear
-    print_install "Memasang Password SSH"
+    print_install "Install Config SSH"
     curl_with_key "files/password" "/etc/pam.d/common-password"
     chmod +x /etc/pam.d/common-password
     DEBIAN_FRONTEND=noninteractive dpkg-reconfigure keyboard-configuration
@@ -714,17 +709,17 @@ echo 1 > /proc/sys/net/ipv6/conf/all/disable_ipv6
 sed -i '$ i\echo 1 > /proc/sys/net/ipv6/conf/all/disable_ipv6' /etc/rc.local
 ln -fs /usr/share/zoneinfo/Asia/Jakarta /etc/localtime
 sed -i 's/AcceptEnv/#AcceptEnv/g' /etc/ssh/sshd_config
-print_success "Password SSH"
+print_success "SSH"
 }
 function memasang_pembatas(){
 clear
-print_install "Memasang Service Pembatasan IP & Quota"
+print_install "Install Service Pembatasan IP & Quota"
 curl_with_key "config/limiter.sh" && chmod +x limiter.sh && ./limiter.sh
 print_success "Service Pembatasan IP & Quota"
 }
 function memasang_sshd(){
 clear
-print_install "Memasang SSHD"
+print_install "Install SSHD"
 curl_with_key "files/sshd" "/etc/ssh/sshd_config"
 chmod 700 /etc/ssh/sshd_config
 systemctl restart ssh > /dev/null 2>&1
@@ -738,7 +733,7 @@ print_success "SSHD Success Dipasang"
 }
 function memasang_vnstat(){
 clear
-print_install "Memasang Vnstat"
+print_install "Install Vnstat"
 apt -y install vnstat > /dev/null 2>&1
 apt -y install libsqlite3-dev > /dev/null 2>&1
 wget -q https://humdi.net/vnstat/vnstat-2.6.tar.gz > /dev/null 2>&1
@@ -764,7 +759,7 @@ token = {\"access_token\":\"ya29.a0Aa4xrXMPV1knwJYo1qRyshFvggrEvUHYxilF3Oc0iaC-0
 
 memasang_pencadangan() {
   clear
-  print_install "Memasang Pencadangan Server"
+  print_install "Install Pencadangan Server"
   export DEBIAN_FRONTEND=noninteractive
   apt update && apt install rclone -y
 
@@ -780,7 +775,7 @@ memasang_pencadangan() {
   rm -rf wondershaper
   echo > /home/limit
 
-  apt install msmtp-mta ca-certificates bsd-mailx -y
+  apt install msmtp-mta ca-certificates bsd-mailx -y > /dev/null 2>&1
   cat <<EOF>>/etc/msmtprc
 defaults
 tls on
@@ -800,7 +795,7 @@ EOF
 }
 function memasang_bbr_hybla(){
   clear
-  print_install "Memasang BBR Hybla"
+  print_install "Install BBR Hybla"
 
   apt install -y ethtool net-tools haveged htop iftop >/dev/null 2>&1
 
@@ -956,7 +951,7 @@ EOF
 }
 function memasang_fail2ban(){
     clear
-    print_install "Memasang Fail2ban"
+    print_install "Install Fail2ban"
     apt update -y && apt install -y fail2ban > /dev/null 2>&1
     if [ -d "/usr/local/ddos" ]; then
         echo -e "\nUninstalling The Previous Version First..."
@@ -978,7 +973,7 @@ function memasang_fail2ban(){
 }
 function memasang_netfilter(){
 clear
-print_install "Memasang Netfilter & IPtables"
+print_install "Install Netfilter & IPtables"
 wget -q -O /usr/local/share/xray/geosite.dat "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat" > /dev/null 2>&1
 wget -q -O /usr/local/share/xray/geoip.dat "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat" > /dev/null 2>&1
 iptables-save > /etc/iptables.up.rules
@@ -992,7 +987,7 @@ print_success "Netfilter & IPtables"
 }
 function memasang_badvpn(){
 clear
-print_install "Memasang BadVPN"
+print_install "Install BadVPN"
 curl_with_key "files/newudpgw" "/usr/bin/badvpn-udpgw"
 chmod +x /usr/bin/badvpn-udpgw
 sed -i '$ i\screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7100 --max-clients 500' /etc/rc.local
@@ -1007,7 +1002,6 @@ function memasang_restart(){
 clear
 print_install "Memulai Semua Services"
 systemctl daemon-reload > /dev/null 2>&1
-systemctl restart nginx > /dev/null 2>&1
 systemctl restart ssh > /dev/null 2>&1
 systemctl restart dropbear > /dev/null 2>&1
 systemctl restart ws-stunnel > /dev/null 2>&1
@@ -1019,7 +1013,6 @@ systemctl restart server-sldns > /dev/null 2>&1
 systemctl restart client-sldns > /dev/null 2>&1
 systemctl restart udp-custom > /dev/null 2>&1
 systemctl restart noobzvpns > /dev/null 2>&1
-systemctl restart haproxy > /dev/null 2>&1
 systemctl start netfilter-persistent > /dev/null 2>&1
 systemctl enable --now nginx > /dev/null 2>&1
 systemctl enable --now xray > /dev/null 2>&1
@@ -1045,7 +1038,7 @@ print_success "Semua Services"
 }
 function memasang_menu(){
     clear
-    print_install "Memasang Menu"
+    print_install "Install Menu"
     curl_with_key "speedtest.sh" && chmod +x speedtest.sh
     curl_with_key "menu/menu.zip"
     unzip -P kpntunnelenc01 menu.zip > /dev/null 2>&1
@@ -1059,7 +1052,7 @@ function memasang_menu(){
 }
 function memasang_profile(){
     clear
-    print_install "Memasang Profil"
+    print_install "Install Profil"
     cat >/root/.profile <<EOF
 if [ "$BASH" ]; then
     if [ -f ~/.bashrc ]; then
@@ -1128,7 +1121,7 @@ EOF
 }
 function memasang_dropbear(){
 clear
-print_install "Memasang Dropbear"
+print_install "Install Dropbear"
 export DEBIAN_FRONTEND=noninteractive
 apt -y install dropbear
 systemctl stop dropbear >> /dev/null 2>&1
@@ -1149,7 +1142,7 @@ print_success "Dropbear"
 }
 function memasang_sshws(){
     clear
-    print_install "Memasang Websocket"
+    print_install "Install Websocket"
     curl_with_key "files/ws-stunnel" "/usr/local/bin/ws-stunnel"
     curl_with_key "config/tun.conf" "/usr/bin/tun.conf"
     chmod +x /usr/local/bin/ws-stunnel
@@ -1172,7 +1165,7 @@ function memasang_sshws(){
 }
 function memasang_slowdns() {
 clear
-print_install "Memasang Slowdns"
+print_install "Install Slowdns"
 cd
 rm -rf /root/nsdomain
 rm nsdomain
@@ -1183,14 +1176,13 @@ NS_DOMAIN=ns-${SUB_DOMAIN}
 echo $NS_DOMAIN > /root/nsdomain
 nameserver=$(cat /root/nsdomain)
 domen=$(cat /etc/xray/domain)
-apt install -y python3 python3-dnslib net-tools
+apt install -y python3 python3-dnslib net-tools > /dev/null 2>&1
 apt install ncurses-utils -y
 apt install dnsutils -y
 apt install ncurses-utils -y
 apt install -y whois
 apt install -y sudo gnutls-bin
 apt install -y debconf-utils
-service cron reload >/dev/null 2>&1
 cd
 echo "Port 2222" >> /etc/ssh/sshd_config
 echo "Port 2269" >> /etc/ssh/sshd_config
@@ -1276,7 +1268,7 @@ function loading() {
 }
 function memasang_udepe() {
 clear
-print_install "Memasang UDP Custom"
+print_install "Install UDP Custom"
 clear
 cd
 rm -rf /root/udp
@@ -1329,7 +1321,7 @@ print_success "UDP Custom"
 }
 function memasang_noobz() {
   clear
-  print_install "Memasang Noobzvpns"
+  print_install "Install Noobzvpns"
   curl_with_key "noobzvpns.zip"
   unzip noobzvpns.zip
   rm -rf noobzvpns.zip noobzvpns.zip.1 noobzvpns.zip.2 noobzvpns.zip.3 noobzvpns.zip.4
@@ -1345,12 +1337,11 @@ function memasang_noobz() {
 }
 function memasang_haproxy() {
 clear
-print_install "Memasang Haproxy"
+print_install "Install Haproxy"
 if [ "$EUID" -ne 0 ]; then
   echo -e "${BIWhite}Jalankan script ini sebagai root!${NC}"
   exit 1
 fi
-echo -e "${BIWhite}✥Bersihkan HAProxy lama jika ada...${NC}"
 systemctl stop haproxy > /dev/null 2>&1
 systemctl disable haproxy > /dev/null 2>&1
 apt purge -y haproxy > /dev/null 2>&1
@@ -1460,129 +1451,57 @@ echo -e "${BIWhite}✥Cek konfigurasi HAProxy...${NC}"
 haproxy -c -f /etc/haproxy/haproxy.cfg > /dev/null 2>&1
 if [ $? -eq 0 ]; then
     echo -e "${BIWhite}✥Konfigurasi valid. Menyalakan HAProxy...${NC}"
-    systemctl restart haproxy >/dev/null 2>&1
     systemctl enable haproxy >/dev/null 2>&1
     echo -e "${BIWhite}✥HAProxy berhasil dipasang dan diperbarui!${NC}"
 else
     echo -e "${BIWhite}✥Konfigurasi tidak valid. Cek file: /etc/haproxy/haproxy.cfg${NC}"
 fi
-systemctl restart haproxy >/dev/null 2>&1
 print_success "Haproxy"
 }
 function memasang_index_page() {
   cat <<EOF > /var/www/html/index.html
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en" >
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>KPNTunnel Project</title>
+  <title>Project xCode001</title>
+  <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
   <style>
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: 'Helvetica Neue', sans-serif;
-      background: linear-gradient(135deg, #e0f7fa, #ffffff);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
+    /* Cursor blink animation */
+    @keyframes blink {
+      0%, 50%, 100% { opacity: 1; }
+      25%, 75% { opacity: 0; }
     }
-
-    .card {
-      background: white;
-      padding: 40px;
-      max-width: 800px;
-      margin: 20px;
-      border-radius: 20px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-      color: #333;
-    }
-
-    h1 {
-      text-align: center;
-      color: #00796b;
-      margin-bottom: 30px;
-      font-size: 2em;
-    }
-
-    p {
-      margin-bottom: 20px;
-      line-height: 1.8;
-      font-size: 1.05em;
-    }
-
-    strong {
-      color: #004d40;
-    }
-
-    em {
-      color: #555;
-      font-style: italic;
-    }
-
-    .footer {
-      margin-top: 40px;
-      text-align: center;
-      font-size: 0.95em;
-      color: #777;
-    }
-
-    @media (max-width: 600px) {
-      .card {
-        padding: 25px;
-      }
-
-      h1 {
-        font-size: 1.5em;
-      }
-
-      p {
-        font-size: 1em;
-      }
+    .blink-caret {
+      animation: blink 1s step-start infinite;
     }
   </style>
 </head>
-<body>
-  <div class="card">
-    <h1>⚠️ WARNING ⚠️</h1>
+<body class="bg-gray-900 text-green-400 font-mono h-screen flex items-center justify-center p-4">
 
-    <p><strong>"Ibadah dan pahalamu tidak bisa menyelamatkanmu dari Neraka.</strong><br>
-    Jika kamu bandingkan dengan nikmat yang Allah SWT berikan padamu.</p>
-
-    <p>Lebih besar yang mana?<br>
-    Lebih berat yang mana?</p>
-
-    <p>Saat kamu diciptakan, apakah itu bukan nikmat?<br>
-    Bahkan kematian pun adalah nikmat...!!!</p>
-
-    <p>Semua yang kamu alami adalah nikmat yang Allah SWT berikan untukmu.</p>
-
-    <p>Yang menyelamatkanmu adalah Allah SWT (rahmat-Nya atau disebut kasih sayang-Nya).</p>
-
-    <p>Hanya saja <strong>(berusahalah)</strong> untuk mendapatkan rahmat-Nya.<br>
-    kita harus beribadah, mengerjakan perintah-perintah-Nya dan menjauhi larangan-larangan-Nya.</p>
-
-    <p><strong>Beribadahlah</strong> semata-mata mengharapkan ridho-Nya, rahmat-Nya.</p>
-
-    <p><strong>Oleh sebab itu</strong>, janganlah berpikir ibadah dan pahala-mu bisa membawamu ke Surga dan menyelamatkanmu dari Neraka.</p>
-
-    <p><em>Inilah hal yang selama ini aku temukan dan tanamkan pada diriku.</em></p>
-
-    <p><strong>(Berusahalah semampumu & jika Allah SWT merahmatimu maka nantinya kamu bisa melampaui batasanmu)</strong></p>
-
-    <p>Semoga kita termasuk orang-orang beruntung yang mendapatkan Rahmat dan Kasih Sayang Allah SWT.</p>
-
-    <p><em>Saya bukan ustadz, masih fakir akan ilmu bahkan baca doa Yasinan aja masih lupa dan salah 😂.</em></p>
-
-    <p>Hanya saja aku merasa bahwa pemikiran yang aku tahu ini harus aku bagikan kepada orang lain.</p>
-
-    <div class="footer">
-      Semoga bermanfaat 🙏🙏🙏
-      Terima kasih atas sharingnya:<br />
-      <strong>@xcode000</strong>
+  <div class="w-full max-w-3xl bg-black bg-opacity-90 rounded-lg shadow-lg p-6">
+    <div>
+      <span class="text-red-500 font-bold">user@xcode001</span>
+      <span class="text-gray-500">:~$</span>
+      <span> <span id="typed-text"></span><span class="blink-caret">|</span></span>
     </div>
   </div>
+
+  <script type="text/javascript">
+    const text = "welcome to xcode001 project";
+    const typedText = document.getElementById("typed-text");
+    let index = 0;
+
+    function type() {
+      if (index < text.length) {
+        typedText.textContent += text.charAt(index);
+        index++;
+        setTimeout(type, 100);
+      }
+    }
+    type();
+  </script>
 </body>
 </html>
 EOF
