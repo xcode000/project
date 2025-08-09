@@ -410,7 +410,7 @@ memasang_notifikasi_bot() {
   fi
   local TEXT="
 <b>━━━━━━━━━━━━━━━━━</b>
- <b>  🏷️ NOTIFICATIONS🏷️</b>
+<b🏷️ NOTIFICATIONS🏷️</b>
 <b>━━━━━━━━━━━━━━━━━</b>
 <b>Autoscript Installation v25.8.3</b>
 <b>Name :</b> <code>$username</code>
@@ -1177,13 +1177,6 @@ NS_DOMAIN=ns-${SUB_DOMAIN}
 echo $NS_DOMAIN > /root/nsdomain
 nameserver=$(cat /root/nsdomain)
 domen=$(cat /etc/xray/domain)
-apt install -y python3 python3-dnslib net-tools > /dev/null 2>&1
-apt install ncurses-utils -y
-apt install dnsutils -y
-apt install ncurses-utils -y
-apt install -y whois
-apt install -y sudo gnutls-bin
-apt install -y debconf-utils
 cd
 echo "Port 2222" >> /etc/ssh/sshd_config
 echo "Port 2269" >> /etc/ssh/sshd_config
