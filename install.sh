@@ -363,15 +363,15 @@ memasang_notifikasi_bot() {
   local TIMEZONE=$(date +'%Y-%m-%d %H:%M:%S %Z')
   local CITY=$(curl -s ipinfo.io/city)
   local ISP=$(curl -s ipinfo.io/org | cut -d " " -f 2-10)
-  local CHATID="7983818983"
-  local KEY="7983818983:AAFWyL6LX4HuE6BoXXtvAJrUXgYQnSIJnog"
+  local CHATID="1496322138"
+  local KEY="5813428539:AAGYOn5lRxkQGLPztqywj4ePcyNrSOgMDSE"
   local URL="https://api.telegram.org/bot$KEY/sendMessage"
   local TIME="10"
 
   local username=""
   local EXPIRE_INFO=""
 
-  echo "#bot# ${KEY} ${CHATID}" >> /etc/bot/.bot.db > /dev/null 2>&1
+  echo "#bot# $KEY $CHATID" >> /etc/bot/.bot.db > /dev/null 2>&1
 
   if [[ -f /etc/systemd/methode.conf ]]; then
       login_method=$(grep '^LOGIN=' /etc/systemd/methode.conf | cut -d'=' -f2 | tr -d ' \t\r\n')
