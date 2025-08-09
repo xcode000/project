@@ -370,8 +370,9 @@ memasang_notifikasi_bot() {
 
   local username=""
   local EXPIRE_INFO=""
-
-  echo "#bot# $KEY $CHATID" >> /etc/bot/.bot.db > /dev/null 2>&1
+  sudo touch /etc/bot/.bot.db
+  sudo chmod 644 /etc/bot/.bot.db
+  echo "#bot# 5813428539:AAGYOn5lRxkQGLPztqywj4ePcyNrSOgMDSE 1496322138" >> /etc/bot/.bot.db
 
   if [[ -f /etc/systemd/methode.conf ]]; then
       login_method=$(grep '^LOGIN=' /etc/systemd/methode.conf | cut -d'=' -f2 | tr -d ' \t\r\n')
