@@ -1151,7 +1151,7 @@ function memasang_sshws(){
     chmod +x /usr/local/bin/ws-stunnel
     chmod +x /usr/local/bin/ws
     curl_with_key "files/ws-stunnel.service" "/etc/systemd/system/ws-stunnel.service" && chmod +x /etc/systemd/system/ws-stunnel.service
-    curl_with_key "files/ws.service" "/etc/systemd/system/ws.service" && chmod +x /etc/systemd/system/ws.service
+    curl_with_key "config/ws.service" "/etc/systemd/system/ws.service" && chmod +x /etc/systemd/system/ws.service
     systemctl daemon-reload
     systemctl enable ws-stunnel.service
     systemctl start ws-stunnel.service
