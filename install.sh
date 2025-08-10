@@ -350,54 +350,54 @@ function memasang_domain() {
         fi
     done
     
-    print_success "Hore Domain Mu"
+    print_success "Success"
 }
 memasang_notifikasi_bot() {
   clear
-  mkdir -p /etc/bot > /dev/null 2>&1
-  local MYIP=$(curl -sS ipv4.icanhazip.com)
-  local OS=$(lsb_release -d | cut -f2)
-  local RAM=$(free -m | awk '/Mem:/ {print $2" MB"}')
-  local UPTIME=$(uptime -p | sed 's/up //')
-  local CPU=$(awk -F ': ' '/^model name/ {print $2; exit}' /proc/cpuinfo)
-  local domain=$(cat /etc/xray/domain 2>/dev/null || echo "undefined")
-  local TIMEZONE=$(date +'%Y-%m-%d %H:%M:%S %Z')
-  local CITY=$(curl -s ipinfo.io/city)
-  local ISP=$(curl -s ipinfo.io/org | cut -d " " -f 2-10)
-  local CHATID="1496322138"
-  local KEY="5813428539:AAGYOn5lRxkQGLPztqywj4ePcyNrSOgMDSE"
-  local URL="https://api.telegram.org/bot$KEY/sendMessage"
-  local TIME="10"
+  mkdir -p /etc/bot >/dev/null 2>&1
 
-  local username=""
-  local EXPIRE_INFO=""
+  MYIP=$(curl -sS ipv4.icanhazip.com)
+  OS=$(lsb_release -d | cut -f2-)
+  RAM=$(free -m | awk '/Mem:/ {print $2" MB"}')
+  UPTIME=$(uptime -p | sed 's/up //')
+  CPU=$(awk -F ': ' '/^model name/ {print $2; exit}' /proc/cpuinfo)
+  domain=$(cat /etc/xray/domain 2>/dev/null || echo "undefined")
+  TIMEZONE=$(date +'%Y-%m-%d %H:%M:%S %Z')
+  CITY=$(curl -s ipinfo.io/city)
+  ISP=$(curl -s ipinfo.io/org | cut -d " " -f 2-10)
+  CHATID="1496322138"
+  KEY="8188195941:AAEZgYemm7h_UkeLy_XWC_JERrXrisIKXxY"
+  URL="https://api.telegram.org/bot$KEY/sendMessage"
+  TIME="10"
+
   sudo touch /etc/bot/.bot.db
   sudo chmod 644 /etc/bot/.bot.db
-  echo "#bot# 5813428539:AAGYOn5lRxkQGLPztqywj4ePcyNrSOgMDSE 1496322138" >> /etc/bot/.bot.db
+  echo "#bot# $KEY $CHATID" >> /etc/bot/.bot.db
 
   if [[ -f /etc/systemd/methode.conf ]]; then
       login_method=$(grep '^LOGIN=' /etc/systemd/methode.conf | cut -d'=' -f2 | tr -d ' \t\r\n')
   else
       login_method="PASSWORD"
   fi
+
   if [[ "$login_method" == "PASSWORD" ]]; then
       username="Install Via Password"
       EXPIRE_INFO="<code>Lifetime (Unlimited Days) (Active)</code>"
   else
-      local izinsc="https://script.stunnel.sbs/api/data/ip"
-      local IP_DATA_LINE=$(curl -s -H "x-api-key: d92ead44d7ca8202645517e1956442339c2f3263aa425804deaa62d4d0bbd881" "$izinsc" | grep -w "$MYIP" | head -1)
+      izinsc="https://script.stunnel.sbs/api/data/ip"
+      IP_DATA_LINE=$(curl -s -H "x-api-key: d92ead44d7ca8202645517e1956442339c2f3263aa425804deaa62d4d0bbd881" "$izinsc" | grep -w "$MYIP" | head -1)
 
       username=$(echo "$IP_DATA_LINE" | awk '{print $2}')
-      local exp=$(echo "$IP_DATA_LINE" | awk '{print $3}')
+      exp=$(echo "$IP_DATA_LINE" | awk '{print $3}')
 
       if [[ "$exp" == "lifetime" ]]; then
         EXPIRE_INFO="<code>Lifetime (Unlimited Days) (Active)</code>"
       elif [[ -n "$exp" ]]; then
-        local exp_timestamp=$(date -d "$exp" +%s 2>/dev/null)
+        exp_timestamp=$(date -d "$exp" +%s 2>/dev/null)
         if [[ $? -eq 0 ]]; then
-          local today_timestamp=$(date +%s)
-          local DAYS_LEFT=$(( (exp_timestamp - today_timestamp) / 86400 ))
-          local sts="(Active)"
+          today_timestamp=$(date +%s)
+          DAYS_LEFT=$(( (exp_timestamp - today_timestamp) / 86400 ))
+          sts="(Active)"
           if [[ "$today_timestamp" -ge "$exp_timestamp" ]]; then
             sts="(Expired)"
           fi
@@ -409,9 +409,10 @@ memasang_notifikasi_bot() {
         EXPIRE_INFO="<code>Not Set</code>"
       fi
   fi
-  local TEXT="
+
+  TEXT=$(cat <<-EOF
 <b>━━━━━━━━━━━━━━━━━</b>
-<b🏷️ NOTIFICATIONS🏷️</b>
+<b>🏷️ NOTIFICATIONS 🏷️</b>
 <b>━━━━━━━━━━━━━━━━━</b>
 <b>Autoscript Installation v25.8.3</b>
 <b>Name :</b> <code>$username</code>
@@ -427,11 +428,14 @@ memasang_notifikasi_bot() {
 <b>Expiration :</b> $EXPIRE_INFO
 <b>━━━━━━━━━━━━━━━━━</b>
 <b>Automatic Notification From Installer Client...</b>
-"
+EOF
+)
 
-  local INLINE_KEYBOARD='{"inline_keyboard":[[{"text":"Telegram","url":"https://t.me/xcode001"}]]}'
+  INLINE_KEYBOARD='{"inline_keyboard":[[{"text":"Telegram","url":"https://t.me/xcode001"}]]}'
 
-  curl -s --max-time "$TIME" -d "chat_id=$CHATID&disable_web_page_preview=1&text=$TEXT&parse_mode=html&reply_markup=$INLINE_KEYBOARD" "$URL" >/dev/null
+  INLINE_KEYBOARD_ENC=$(echo "$INLINE_KEYBOARD" | jq -sRr @uri)
+  response=$(curl -s --max-time "$TIME" -d "chat_id=$CHATID&disable_web_page_preview=1&text=$TEXT&parse_mode=HTML&reply_markup=$INLINE_KEYBOARD_ENC" "$URL")
+
 }
 function install_firwall() {
 interface=$(ip -4 route ls | grep default | grep -Po '(?<=dev )(\S+)' | head -1)
@@ -1146,7 +1150,7 @@ function memasang_sshws(){
     clear
     print_install "Install Websocket"
     curl_with_key "files/ws-stunnel" "/usr/local/bin/ws-stunnel"
-    curl_with_key "config/tun.conf" "/usr/bin/tun.conf"
+    curl_with_key "config/tun.conf" "/usr/bin/tunws.conf"
     curl_with_key "config/ws" "/usr/local/bin/ws"
     chmod +x /usr/local/bin/ws-stunnel
     chmod +x /usr/local/bin/ws
@@ -1238,17 +1242,11 @@ EOF
 cd
 chmod +x /etc/systemd/system/client-sldns.service
 chmod +x /etc/systemd/system/server-sldns.service
-pkill dnstt-server >/dev/null 2>&1
-pkill dnstt-client >/dev/null 2>&1
 systemctl daemon-reload >/dev/null 2>&1
-systemctl stop server-sldns >/dev/null 2>&1
 systemctl enable server-sldns >/dev/null 2>&1
 systemctl start server-sldns >/dev/null 2>&1
-systemctl restart server-sldns >/dev/null 2>&1
-systemctl stop client-sldns >/dev/null 2>&1
 systemctl enable client-sldns >/dev/null 2>&1
 systemctl start client-sldns >/dev/null 2>&1
-systemctl restart client-sldns >/dev/null 2>&1
 clear
 cd
 print_success "Slowdns"
@@ -1276,11 +1274,11 @@ rm -rf /root/udp
 mkdir -p /root/udp
 sleep 1
 echo -e "${BIWhite}downloading udp-custom${NC}"
-wget -q --show-progress --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=1ixz82G_ruRBnEEp4vLPNF2KZ1k8UfrkV' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=1ixz82G_ruRBnEEp4vLPNF2KZ1k8UfrkV" -O /root/udp/udp-custom && rm -rf /tmp/cookies.txt
+wget -q --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=1ixz82G_ruRBnEEp4vLPNF2KZ1k8UfrkV' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=1ixz82G_ruRBnEEp4vLPNF2KZ1k8UfrkV" -O /root/udp/udp-custom && rm -rf /tmp/cookies.txt
 chmod +x /root/udp/udp-custom
 sleep 1
 echo -e "${BIWhite}downloading default config${NC}"
-wget -q --show-progress --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=1klXTiKGUd2Cs5cBnH3eK2Q1w50Yx3jbf' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=1klXTiKGUd2Cs5cBnH3eK2Q1w50Yx3jbf" -O /root/udp/config.json && rm -rf /tmp/cookies.txt
+wget -q --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=1klXTiKGUd2Cs5cBnH3eK2Q1w50Yx3jbf' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=1klXTiKGUd2Cs5cBnH3eK2Q1w50Yx3jbf" -O /root/udp/config.json && rm -rf /tmp/cookies.txt
 chmod 644 /root/udp/config.json
 if [ -z "$1" ]; then
 cat <<EOF > /etc/systemd/system/udp-custom.service
@@ -1542,15 +1540,15 @@ function mulai_penginstallan(){
     install_firwall
 }
 mulai_penginstallan
-history -c
 rm -rf /root/menu
 rm -rf /root/*.zip
 rm -rf /root/*.sh
 rm -rf /root/LICENSE
 rm -rf /root/README.md
 rm -rf /root/domain
+history -c
 clear
 secs_to_human "$(($(date +%s) - ${start}))"
 echo -e "${BIWhite}Script Successfully Installed${NC}"
-read -p "$( echo -e "${BIYellow}Press ${BIWhite}[ ${NC}${LIME}Enter${NC} ${BIWhite}]${BIYellow} For reboot${NC}") "
+sleep 2
 reboot
