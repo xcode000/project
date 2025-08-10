@@ -28,7 +28,7 @@ tampilan() {
     pass_list_url="https://script.stunnel.sbs/pass.txt"
     clear
     echo -e "${BIYellow}========================================${NC}"
-    echo -e "${BICyan}        LOGIN MENU - VPS ACCESS${NC}"
+    echo -e "${BICyan}     LOGIN MENU - AUTOSCRIPTS ACCESS      ${NC}"
     echo -e "${BIYellow}========================================${NC}"
     echo -e "${BIGreen}[1]${NC} 🔑 Validasi IP / License"
     echo -e "${BIGreen}[2]${NC} 🔐 Login via Password"
@@ -36,17 +36,17 @@ tampilan() {
     read -rp "Pilih [1/2]: " pilihan
     case "$pilihan" in
         1)
-            echo -e "\n${BIWhite}[ ${BIYellow}INFO${BIWhite} ] Mengecek Izin Akses...${NC}"
+            echo -e "\n${BIWhite}[ ${BIYellow}INFO${BIWhite} ] Checking Access Permissions...${NC}"
             my_ip=$(curl -sS ipv4.icanhazip.com | tr -d ' \t\r\n')
             if [[ -z "$my_ip" ]]; then
-                echo -e "${BIWhite}[ ${RED}ERROR${BIWhite} ] Gagal mendapatkan IP publik!${NC}"
+                echo -e "${BIWhite}[ ${RED}ERROR${BIWhite} ] Failed to get public IP!${NC}"
                 exit 1
             fi
             ip_list=$(curl -sS -H "x-api-key: d92ead44d7ca8202645517e1956442339c2f3263aa425804deaa62d4d0bbd881" "$allowed_ips_url")
             entries=$(echo "$ip_list" | sed 's/###/\n###/g' | sed '/^\s*$/d' | sed 's/^### *//')
             matched_line=$(echo "$entries" | awk -v ip="$my_ip" '$3 == ip { print; exit }')
             if [[ -z "$matched_line" ]]; then
-                echo -e "${BIWhite}[ ${BIYellow}DITOLAK${BIWhite} ] IP ${BIYellow}$my_ip${BIWhite} tidak terdaftar dalam izin.${NC}"
+                echo -e "${BIWhite}[ ${BIYellow}REJECTED${BIWhite} ] IP ${BIYellow}$my_ip${BIWhite} not listed in the permit.${NC}"
                 exit 1
             fi
             exp_date=$(echo "$matched_line" | awk '{print $2}' | tr -d ' \t\r\n')
@@ -56,15 +56,15 @@ tampilan() {
             today_epoch=$(date -d "$today" +%s)
             exp_epoch=$(date -d "$exp_date" +%s 2>/dev/null || echo 0)
             if [[ "$status" != "Active" ]]; then
-                echo -e "${BIWhite}[ ${RED}DITOLAK${BIWhite} ] Status akun Anda: ${RED}$status${NC}"
+                echo -e "${BIWhite}[ ${RED}REJECTED${BIWhite} ] Your account status: ${RED}$status${NC}"
                 exit 1
             fi
             if (( exp_epoch == 0 )); then
-                echo -e "${BIWhite}[ ${RED}ERROR${BIWhite} ] Format tanggal expired tidak valid: $exp_date${NC}"
+                echo -e "${BIWhite}[ ${RED}ERROR${BIWhite} ] Invalid expiry date format: $exp_date${NC}"
                 exit 1
             fi
             if (( today_epoch > exp_epoch )); then
-                echo -e "${BIWhite}[ ${RED}DITOLAK${BIWhite} ] IP ${BIYellow}$my_ip${BIWhite} Expired pada: ${RED}$exp_date${NC}"
+                echo -e "${BIWhite}[ ${RED}REJECTED${BIWhite} ] IP ${BIYellow}$my_ip${BIWhite} Expired on: ${RED}$exp_date${NC}"
                 exit 1
             fi
             echo -e "${BIWhite}[ ${LIME}INFO${BIWhite} ] Accepted: ${LIME}$my_ip${BIWhite} Status: ${LIME}$status${BIWhite}, Valid Until: ${BIYellow}$exp_date${NC}"
@@ -74,29 +74,29 @@ tampilan() {
         ;;
         2)
             echo
-            read -rsp "Masukkan Password: " password_input
+            read -rsp "Enter Password: " password_input
             echo
 
             if curl -sS "$pass_list_url" | grep -Fxq "$password_input"; then
-                echo -e "${BIWhite}[ ${LIME}INFO${BIWhite} ] Login berhasil via Password!${NC}"
+                echo -e "${BIWhite}[ ${LIME}INFO${BIWhite} ] Login successful via Password!${NC}"
                 echo "LOGIN=PASSWORD" > /etc/systemd/methode.conf
                 chown root:root /etc/systemd/methode.conf
                 chmod 600 /etc/systemd/methode.conf
             else
-                echo -e "${BIWhite}[ ${RED}ERROR${BIWhite} ] Password yang Anda masukkan salah!${NC}"
+                echo -e "${BIWhite}[ ${RED}ERROR${BIWhite} ] The password you entered is incorrect!${NC}"
                 sleep 1
                 tampilan
             fi
         ;;
         *)
-            echo -e "${BIWhite}[ ${RED}ERROR${BIWhite} ] Pilihan Tidak Valid!${NC}"
+            echo -e "${BIWhite}[ ${RED}ERROR${BIWhite} ] Invalid Choice!${NC}"
             sleep 1
             tampilan
         ;;
     esac
 }
 setup_grub_env() {
-  echo "Menyiapkan environment dan GRUB..."
+  echo "Setting up the environment and GRUB..."
   NEW_PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
   if ! grep -q "^PATH=.*$NEW_PATH" /etc/environment 2>/dev/null; then
     if grep -q "^PATH=" /etc/environment 2>/dev/null; then
@@ -133,9 +133,9 @@ setup_grub_env() {
     echo ""
   fi
   if update-grub >/dev/null 2>&1; then
-    echo "update-grub berhasil dijalankan"
+    echo "update-grub executed successfully"
   else
-    echo "Gagal menjalankan update-grub"
+    echo "Failed to run update-grub"
     return 2
   fi
 }
@@ -201,7 +201,7 @@ function print_error() {
 }
 function print_success() {
     if [[ 0 -eq $? ]]; then
-        echo -e "${BIWhite}✥${LIME} $1 Berhasil Di Pasang${NC}"
+        echo -e "${BIWhite}✥${LIME} $1 Installed Successfully${NC}"
         sleep 2
     fi
 }
@@ -242,11 +242,11 @@ export Arch=$(uname -m)
 export IP=$(curl -s https://ipinfo.io/ip/)
 function pengaturan_pertama() {
     clear
-    print_install "Mengatur Tanggal,waktu ke WIB"
+    print_install "Set the date and time to WIB"
     timedatectl set-timezone Asia/Jakarta
     echo iptables-persistent iptables-persistent/autosave_v4 boolean true | debconf-set-selections
     echo iptables-persistent iptables-persistent/autosave_v6 boolean true | debconf-set-selections
-    print_success "Tanggal,waktu ke WIB"
+    print_success "Date, time to WIB"
 }
 function memasang_nginx() {
     clear
@@ -275,13 +275,13 @@ types {
     application/x-7z-compressed           7z;
 }
 EOL
-    sudo nginx -t
-    sudo systemctl restart nginx
-    print_success "Nginx & konfigurasinya"
+    sudo nginx -t > /dev/null 2>&1
+    sudo systemctl restart nginx > /dev/null 2>&1
+    print_success "Nginx & its configuration"
 }
 function memasang_paket_dasar() {
     clear
-    print_install "Install Paket Dasar"
+    print_install "Install Supporting Packages"
     export DEBIAN_FRONTEND=noninteractive
     apt update -y
     apt upgrade -y
@@ -310,50 +310,49 @@ function memasang_paket_dasar() {
     apt clean
     apt autoremove -y
     apt remove --purge -y exim4 ufw firewalld > /dev/null 2>&1
-    print_success "Paket Dasar"
+    print_success "Done Install"
 }
 function memasang_domain() {
     clear
-    print_install "Silahkan Atur Domain Anda"
+    print_install "Please Set Your Domain"
     echo -e "${BIWhite}┌──────────────────────────────────────┐${NC}"
-    echo -e "${LIME}            Setup domain Menu         ${NC}"
+    echo -e "${LIME}            Setup domain Menu              ${NC}"
     echo -e "${BIWhite}└──────────────────────────────────────┘${NC}"
-    echo -e "${LIME}[${BIWhite}01${LIME}]${BIWhite} Menggunakan Domain Sendiri${NC}"
-    echo -e "${LIME}[${BIWhite}02${LIME}]${BIWhite} Menggunakan Domain Bawaan Dari Script${NC}"
+    echo -e "${LIME}[${BIWhite}01${LIME}]${BIWhite} Using Your Own Domain${NC}"
+    echo -e "${LIME}[${BIWhite}02${LIME}]${BIWhite} Using Default Domain From Script${NC}"
     echo -e "${BIWhite}└──────────────────────────────────────┘${NC}"
     echo -e ""
     while true; do
-        read -p "Silahkan Pilih Opsi 1 Atau 2: " host
+        read -p "Please Select Option 1 Or 2: " host
         echo ""
         if [[ $host == "1" ]]; then
-            read -p "Silahkan Masukan Domain Mu: " host1
+            read -p "Please enter your domain: " host1
             echo "IP=$host1" >> /var/lib/ipvps.conf
             echo $host1 > /etc/xray/domain
             echo $host1 > /root/domain
             echo "ns-$host1" > /root/nsdomain
             echo "ns-$host1" > /etc/xray/dns
-            echo -e "${BIWhite}Subdomain $host1 Mu Berhasil Di Atur${NC}"
+            echo -e "${BIWhite}Subdomain $host1 Set up successfully${NC}"
             echo ""
             break
         elif [[ $host == "2" ]]; then
-            echo -e "${BIWhite}Mengatur Subdomain Mu${NC}"
+            echo -e "${BIWhite}Set Your Subdomain${NC}"
             curl_with_key "files/cloudflare" && chmod +x cloudflare && ./cloudflare
             rm -f /root/cloudflare
             clear
-            echo -e "${BIWhite}Subdomain Mu Berhasil Di Atur${NC}"
+            echo -e "${BIWhite}Your Subdomain Has Been Successfully Set Up${NC}"
             break
         else
-            echo -e "${RED}Pilihan Mu Tidak Valid! Harap Pilih Angka 1 Atau 2.${NC}"
+            echo -e "${RED}Your selection is invalid! Please select number 1 or 2.${NC}"
             echo -e "${BIWhite}└──────────────────────────────────────┘${NC}"
         fi
     done
     
-    print_success "Success"
+    print_success "Done"
 }
 memasang_notifikasi_bot() {
   clear
   mkdir -p /etc/bot >/dev/null 2>&1
-
   MYIP=$(curl -sS ipv4.icanhazip.com)
   OS=$(lsb_release -d | cut -f2-)
   RAM=$(free -m | awk '/Mem:/ {print $2" MB"}')
@@ -551,7 +550,7 @@ systemctl restart netfilter-persistent >> /dev/null 2>&1
 }
 function memasang_ssl() {
     clear
-    print_install "Install Sertifikat SSL"
+    print_install "Install SSL Certificate"
     apt update && apt upgrade -y
     rm -rf /etc/xray/xray.key
     rm -rf /etc/xray/xray.crt
@@ -569,7 +568,7 @@ function memasang_ssl() {
 }
 function memasang_folder_xray() {
     clear
-    print_install "Membuat Folder Tambahan Untuk SSH & Xray"
+    print_install "Create Additional Folders For SSH & Xray"
     rm -rf /etc/user_locks.db
     rm -rf /etc/ssh/.ssh.db
     rm -rf /etc/vmess/.vmess.db
@@ -617,7 +616,7 @@ function memasang_folder_xray() {
     echo "& plughin Account" >>/etc/trojan/.trojan.db
     echo "& plughin Account" >>/etc/shadowsocks/.shadowsocks.db
     echo "echo -e 'Vps Config User Account'" >> /etc/user-create/user.log
-    print_install "Folder Tambahan Untuk SSH & Xray"
+    print_success "Done"
 }
 function memasang_xray() {
     clear
@@ -664,11 +663,11 @@ LimitNOFILE=1000000
 [Install]
 WantedBy=multi-user.target
 EOF
-    print_success "Konfigurasi Paket"
+    print_success "Done"
 }
 function memasang_password_ssh(){
     clear
-    print_install "Install Config SSH"
+    print_install "Install SSH Config"
     curl_with_key "files/password" "/etc/pam.d/common-password"
     chmod +x /etc/pam.d/common-password
     DEBIAN_FRONTEND=noninteractive dpkg-reconfigure keyboard-configuration
@@ -716,13 +715,13 @@ echo 1 > /proc/sys/net/ipv6/conf/all/disable_ipv6
 sed -i '$ i\echo 1 > /proc/sys/net/ipv6/conf/all/disable_ipv6' /etc/rc.local
 ln -fs /usr/share/zoneinfo/Asia/Jakarta /etc/localtime
 sed -i 's/AcceptEnv/#AcceptEnv/g' /etc/ssh/sshd_config
-print_success "SSH"
+print_success "Done"
 }
 function memasang_pembatas(){
 clear
-print_install "Install Service Pembatasan IP & Quota"
+print_install "Install IP & Quota Limitation Service"
 curl_with_key "config/limiter.sh" && chmod +x limiter.sh && ./limiter.sh
-print_success "Service Pembatasan IP & Quota"
+print_success "Done"
 }
 function memasang_sshd(){
 clear
@@ -736,7 +735,7 @@ rm -rf /etc/sysctl.conf > /dev/null 2>&1
 curl_with_key "config/sysctl.conf" "/etc/sysctl.conf"
 sysctl -p > /dev/null 2>&1
 ulimit -n 67108864
-print_success "SSHD Success Dipasang"
+print_success "Done"
 }
 function memasang_vnstat(){
 clear
@@ -763,10 +762,9 @@ scope = drive
 token = {\"access_token\":\"ya29.a0Aa4xrXMPV1knwJYo1qRyshFvggrEvUHYxilF3Oc0iaC-0p762eTzkEYBdmCjR2KwDabzbbZXIM3Svw0sLrXjvkPtkDuBfGx4Den9d81Ow2iDoOTOatFozLAecoM3tYZf_gi6Ae4TP3ihKRY_bMQOgSmmRV8aCgYKATASARISFQEjDvL9oVrYgGh_ET41TJzHH-o8kA0163\",\"token_type\":\"Bearer\",\"refresh_token\":\"1//0grQ5ja__cHVYCgYIARAAGBASNwF-L9IrID7_Slumh-27S23f5CWyT7s8xLXwrXrIetDSNcaNcRCunfDagoB6cJCH1hUekmhvZJk\",\"expiry\":\"2022-10-25T12:15:50.5813586+08:00\"}"
   echo "$config_content" | base64 -w 0
 }
-
 memasang_pencadangan() {
   clear
-  print_install "Install Pencadangan Server"
+  print_install "Install Server Backup"
   export DEBIAN_FRONTEND=noninteractive
   apt update && apt install rclone -y
 
@@ -953,7 +951,7 @@ EOF
   fi
 
   clear
-  print_success "BBR Hybla"
+  print_success "Done"
 }
 function memasang_fail2ban(){
     clear
@@ -975,7 +973,7 @@ function memasang_fail2ban(){
     /usr/local/ddos/ddos.sh --cron > /dev/null 2>&1
     systemctl enable --now fail2ban
     systemctl restart fail2ban
-    print_success "Fail2ban"
+    print_success "Done"
 }
 function memasang_netfilter(){
 clear
@@ -989,11 +987,11 @@ netfilter-persistent reload
 cd
 apt autoclean -y > /dev/null 2>&1
 apt autoremove -y > /dev/null 2>&1
-print_success "Netfilter & IPtables"
+print_success "Done"
 }
 function memasang_badvpn(){
 clear
-print_install "Install BadVPN"
+print_install "Install BadVPN Service"
 curl_with_key "files/newudpgw" "/usr/bin/badvpn-udpgw"
 chmod +x /usr/bin/badvpn-udpgw
 sed -i '$ i\screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7100 --max-clients 500' /etc/rc.local
@@ -1002,11 +1000,11 @@ sed -i '$ i\screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7300 --max-c
 screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7100 --max-clients 500
 screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7200 --max-clients 500
 screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7300 --max-clients 500
-print_success "BadVPN"
+print_success "Done"
 }
 function memasang_restart(){
 clear
-print_install "Memulai Semua Services"
+print_install "Starting All Services"
 systemctl daemon-reload > /dev/null 2>&1
 systemctl restart ssh > /dev/null 2>&1
 systemctl restart dropbear > /dev/null 2>&1
@@ -1040,11 +1038,11 @@ cd
 rm -f /root/openvpn
 rm -f /root/key.pem
 rm -f /root/cert.pem
-print_success "Semua Services"
+print_success "Done"
 }
 function memasang_menu(){
     clear
-    print_install "Install Menu"
+    print_install "Install Menu Configuration"
     curl_with_key "speedtest.sh" && chmod +x speedtest.sh
     curl_with_key "menu/menu.zip"
     unzip -P kpntunnelenc01 menu.zip > /dev/null 2>&1
@@ -1054,11 +1052,11 @@ function memasang_menu(){
     sudo dos2unix /usr/local/sbin/* > /dev/null 2>&1
     rm -rf menu
     rm -rf menu.zip
-    print_success "Menu"
+    print_success "Done"
 }
 function memasang_profile(){
     clear
-    print_install "Install Profil"
+    print_install "Install Profil Server"
     cat >/root/.profile <<EOF
 if [ "$BASH" ]; then
     if [ -f ~/.bashrc ]; then
@@ -1123,7 +1121,7 @@ EOF
     else
         TIME_DATE="AM"
     fi
-    print_success "Profil"
+    print_success "Done"
 }
 function memasang_dropbear(){
 clear
@@ -1144,11 +1142,12 @@ systemctl enable dropbear >> /dev/null 2>&1
 apt -y install squid >> /dev/null 2>&1
 curl_with_key "files/squid3.conf" "/etc/squid/squid.conf"
 sed -i $MYIP5 /etc/squid/squid.conf >> /dev/null 2>&1
-print_success "Dropbear"
+print_success "Done"
 }
 function memasang_sshws(){
     clear
-    print_install "Install Websocket"
+    print_install "Install Websocket Service"
+    print_install "Download Websocket File"
     curl_with_key "files/ws-stunnel" "/usr/local/bin/ws-stunnel"
     curl_with_key "config/tun.conf" "/usr/bin/tunws.conf"
     curl_with_key "config/ws" "/usr/local/bin/ws"
@@ -1157,13 +1156,13 @@ function memasang_sshws(){
     curl_with_key "files/ws-stunnel.service" "/etc/systemd/system/ws-stunnel.service" && chmod +x /etc/systemd/system/ws-stunnel.service
     curl_with_key "config/ws.service" "/etc/systemd/system/ws.service" && chmod +x /etc/systemd/system/ws.service
     systemctl daemon-reload
-    systemctl enable ws-stunnel.service
-    systemctl start ws-stunnel.service
-    systemctl restart ws-stunnel.service
-    systemctl enable ws.service
-    systemctl start ws.service
-    systemctl restart ws.service
-    chmod 644 /usr/bin/tun.conf
+    systemctl enable ws-stunnel.service >> /dev/null 2>&1
+    systemctl start ws-stunnel.service >> /dev/null 2>&1
+    systemctl restart ws-stunnel.service >> /dev/null 2>&1
+    systemctl enable ws.service >> /dev/null 2>&1
+    systemctl start ws.service >> /dev/null 2>&1
+    systemctl restart ws.service >> /dev/null 2>&1
+    chmod 644 /usr/bin/tunws.conf >> /dev/null 2>&1
     wget -q -O /usr/local/share/xray/geosite.dat "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat" >> /dev/null 2>&1
     wget -q -O /usr/local/share/xray/geoip.dat "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat" >> /dev/null 2>&1
     iptables-save > /etc/iptables.up.rules
@@ -1173,15 +1172,14 @@ function memasang_sshws(){
     cd
     apt autoclean -y >> /dev/null 2>&1
     apt autoremove -y >> /dev/null 2>&1
-    print_success "Websocket"
+    print_success "Done"
 }
 function memasang_slowdns() {
 clear
-print_install "Install Slowdns"
+print_install "Install SlowDNS Service"
 cd
 rm -rf /root/nsdomain
 rm nsdomain
-clear
 sub=$(cat /etc/xray/domain)
 SUB_DOMAIN=${sub}
 NS_DOMAIN=ns-${SUB_DOMAIN}
@@ -1196,6 +1194,7 @@ service ssh restart > /dev/null 2>&1
 service sshd restart > /dev/null 2>&1
 rm -rf /etc/slowdns
 mkdir -m 777 /etc/slowdns
+print_install "Downloading Server SlowDNS"
 curl_with_key "slowdns/dnstt-server" "/etc/slowdns/dnstt-server"
 curl_with_key "slowdns/dnstt-client" "/etc/slowdns/dnstt-client"
 cd /etc/slowdns
@@ -1249,7 +1248,7 @@ systemctl enable client-sldns >/dev/null 2>&1
 systemctl start client-sldns >/dev/null 2>&1
 clear
 cd
-print_success "Slowdns"
+print_success "Done"
 }
 function loading() {
   clear
@@ -1267,17 +1266,16 @@ function loading() {
 }
 function memasang_udepe() {
 clear
-print_install "Install UDP Custom"
-clear
+print_install "Install SSH UDP Custom"
 cd
 rm -rf /root/udp
 mkdir -p /root/udp
 sleep 1
-echo -e "${BIWhite}downloading udp-custom${NC}"
+print_install "Download Binary UDP Custom"
 wget -q --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=1ixz82G_ruRBnEEp4vLPNF2KZ1k8UfrkV' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=1ixz82G_ruRBnEEp4vLPNF2KZ1k8UfrkV" -O /root/udp/udp-custom && rm -rf /tmp/cookies.txt
 chmod +x /root/udp/udp-custom
 sleep 1
-echo -e "${BIWhite}downloading default config${NC}"
+print_install "Download Config UDP Custom"
 wget -q --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=1klXTiKGUd2Cs5cBnH3eK2Q1w50Yx3jbf' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=1klXTiKGUd2Cs5cBnH3eK2Q1w50Yx3jbf" -O /root/udp/config.json && rm -rf /tmp/cookies.txt
 chmod 644 /root/udp/config.json
 if [ -z "$1" ]; then
@@ -1309,20 +1307,17 @@ RestartSec=2s
 WantedBy=default.target
 EOF
 fi
-echo -e "${BIWhite}start service udp-custom${NC}"
+print_install "Start Service UDP Custom"
 systemctl start udp-custom > /dev/null 2>&1
-sleep 1
-echo -e "${BIWhite}enable service udp-custom${NC}"
 systemctl enable udp-custom > /dev/null 2>&1
-sleep 3 & loading $!
-cd
-print_success "UDP Custom"
+print_success "Done"
 }
 function memasang_noobz() {
   clear
-  print_install "Install Noobzvpns"
+  print_install "Install NoobzVPN Server"
+  print_install "Waiting Download NoobzVPN"
   curl_with_key "noobzvpns.zip"
-  unzip noobzvpns.zip
+  unzip noobzvpns.zip > /dev/null 2>&1
   rm -rf noobzvpns.zip noobzvpns.zip.1 noobzvpns.zip.2 noobzvpns.zip.3 noobzvpns.zip.4
   cd noobzvpns
   chmod +x install.sh
@@ -1332,13 +1327,13 @@ function memasang_noobz() {
   cd
   curl_with_key "config/vpn.sh" && chmod +x vpn.sh && ./vpn.sh
   curl_with_key "config/wg.sh" && chmod +x wg.sh && ./wg.sh
-  print_success "Noobzvpns"
+  print_success "Done"
 }
 function memasang_haproxy() {
 clear
-print_install "Install Haproxy"
+print_install "Install Multi Port Service"
 if [ "$EUID" -ne 0 ]; then
-  echo -e "${BIWhite}Jalankan script ini sebagai root!${NC}"
+  echo -e "${BIWhite}Run this script as root!${NC}"
   exit 1
 fi
 systemctl stop haproxy > /dev/null 2>&1
@@ -1350,7 +1345,7 @@ rm -f /etc/haproxy/hap.pem
 rm -rf /etc/haproxy/errors
 rm -rf /var/lib/haproxy
 rm -f /run/haproxy.pid
-echo -e "${BIWhite}✥Instalasi ulang HAProxy...${NC}"
+echo -e "${BIWhite}✥Reinstall HAProxy...${NC}"
 sudo apt update && sudo apt install haproxy -y
 mkdir -p /etc/haproxy
 cd
@@ -1366,7 +1361,6 @@ yes '' | openssl req -new -x509 -key key.pem -out cert.pem -days 1095 -subj "/C=
 cat key.pem cert.pem >> /etc/haproxy/hap.pem
 rm -rf /root/cert.pem > /dev/null 2>&1
 rm -rfv /root/key.pem > /dev/null 2>&1
-echo -e "${BIWhite}✥Buat konfigurasi HAProxy baru...${NC}"
 cat > /etc/haproxy/haproxy.cfg << 'EOF'
 global
     stats socket /run/haproxy/admin.sock mode 660 level admin expose-fd listeners
@@ -1446,16 +1440,16 @@ backend recir_https
     mode tcp
     server loopback-for-https abns@haproxy-https send-proxy-v2 check
 EOF
-echo -e "${BIWhite}✥Cek konfigurasi HAProxy...${NC}"
+print_install "Check Configuration Multi Port"
 haproxy -c -f /etc/haproxy/haproxy.cfg > /dev/null 2>&1
 if [ $? -eq 0 ]; then
-    echo -e "${BIWhite}✥Konfigurasi valid. Menyalakan HAProxy...${NC}"
+    print_install "Valid"
     systemctl enable haproxy >/dev/null 2>&1
-    echo -e "${BIWhite}✥HAProxy berhasil dipasang dan diperbarui!${NC}"
+    print_install "Multi Port Done Enable"
 else
-    echo -e "${BIWhite}✥Konfigurasi tidak valid. Cek file: /etc/haproxy/haproxy.cfg${NC}"
+    print_install "Configuration Invalid"
 fi
-print_success "Haproxy"
+print_success "Done"
 }
 function memasang_index_page() {
   cat <<EOF > /var/www/html/index.html
