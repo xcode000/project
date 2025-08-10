@@ -19,6 +19,10 @@ WHITE='\033[1;37m'
 LIME='\e[38;5;155m'
 ungu="\e[38;5;99m"
 NC='\033[0m'
+rm -rf setup.sh >/dev/null 2>&1
+rm -rf setup >/dev/null 2>&1
+rm -rf install.sh >/dev/null 2>&1
+rm -rf install >/dev/null 2>&1
 MYIPP=$(curl -s https://checkip.amazonaws.com/);
 MYIP5="s/xxxxxxxxx/$MYIPP/g";
 apt update -y && apt upgrade -y --fix-missing && apt install -y xxd bzip2 wget curl sudo build-essential bsdmainutils screen dos2unix make && update-grub && apt dist-upgrade -y
@@ -250,7 +254,7 @@ function pengaturan_pertama() {
 }
 function memasang_nginx() {
     clear
-    print_install "Install Nginx & konfigurasinya"
+    print_install "Install Nginx & configure"
     apt install nginx -y
     cat <<EOL | sudo tee /etc/nginx/mime.types > /dev/null 2>&1
 types {
@@ -277,7 +281,7 @@ types {
 EOL
     sudo nginx -t > /dev/null 2>&1
     sudo systemctl restart nginx > /dev/null 2>&1
-    print_success "Nginx & its configuration"
+    print_success "Done"
 }
 function memasang_paket_dasar() {
     clear
@@ -1179,7 +1183,6 @@ clear
 print_install "Install SlowDNS Service"
 cd
 rm -rf /root/nsdomain
-rm nsdomain
 sub=$(cat /etc/xray/domain)
 SUB_DOMAIN=${sub}
 NS_DOMAIN=ns-${SUB_DOMAIN}
@@ -1440,6 +1443,7 @@ backend recir_https
     mode tcp
     server loopback-for-https abns@haproxy-https send-proxy-v2 check
 EOF
+clear
 print_install "Check Configuration Multi Port"
 haproxy -c -f /etc/haproxy/haproxy.cfg > /dev/null 2>&1
 if [ $? -eq 0 ]; then
@@ -1545,4 +1549,9 @@ clear
 secs_to_human "$(($(date +%s) - ${start}))"
 echo -e "${BIWhite}Script Successfully Installed${NC}"
 sleep 2
+rm -rf /root/setup.sh >/dev/null 2>&1
+rm -rf /root/setup >/dev/null 2>&1
+rm -rf /root/install.sh >/dev/null 2>&1
+rm -rf /root/install >/dev/null 2>&1
+history -c
 reboot
