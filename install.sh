@@ -754,7 +754,7 @@ systemctl enable vnstat
 /etc/init.d/vnstat restart
 rm -f /root/vnstat-2.6.tar.gz > /dev/null 2>&1
 rm -rf /root/vnstat-2.6 > /dev/null 2>&1
-print_success "Vnstat"
+print_success "Done"
 }
 get_rclone_config_base64() {
   local config_content="[dr]
@@ -798,7 +798,7 @@ password cwmbmtnushnfrlup
 logfile ~/.msmtp.log
 EOF
   chown -R www-data:www-data /etc/msmtprc
-  print_success "Pencadangan Server"
+  print_success "Done"
 }
 function memasang_bbr_hybla(){
   clear
@@ -855,7 +855,7 @@ EOF
       echo -e "${RED} BBR tidak tersedia pada kernel ini${NC}"
   fi
 
-  echo -e "${YELLOW} Mengoptimasi network interfaces...${NC}"
+  echo -e "${YELLOW} Mengoptimasi Network Interfaces...${NC}"
   for interface in $(ip -o -4 addr show | awk '{print $2}' | grep -v "lo" | cut -d/ -f1); do
       echo -e "${GREEN} Mengoptimasi $interface ${NC}"
       ethtool -s $interface gso off gro off tso off
@@ -893,7 +893,6 @@ done
 EOF
 
   chmod +x /usr/local/sbin/network-tune.sh
-  /usr/local/sbin/network-tune.sh >/dev/null 2>&1
 
   echo -e "${YELLOW} Membuat systemd service...${NC}"
   cat > /etc/systemd/system/network-tune.service << EOF
