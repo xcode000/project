@@ -21,6 +21,7 @@ ungu="\e[38;5;99m"
 NC='\033[0m'
 MYIPP=$(curl -s https://checkip.amazonaws.com/);
 MYIP5="s/xxxxxxxxx/$MYIPP/g";
+apt update -y && apt upgrade -y --fix-missing && apt install -y xxd bzip2 wget curl sudo build-essential bsdmainutils screen dos2unix && update-grub && apt dist-upgrade -y
 tampilan() {
     local my_ip allowed_ips_url pass_list_url today matched_line exp_date password_input
     allowed_ips_url="https://script.stunnel.sbs/api/data/ip"
