@@ -23,8 +23,8 @@ MYIPP=$(curl -s https://checkip.amazonaws.com/);
 MYIP5="s/xxxxxxxxx/$MYIPP/g";
 tampilan() {
     local my_ip allowed_ips_url pass_list_url today matched_line exp_date password_input
-    allowed_ips_url="https://script.ipserver.my/api/data/ip"
-    pass_list_url="https://script.ipserver.my/pass.txt"
+    allowed_ips_url="https://script.stunnel.sbs/api/data/ip"
+    pass_list_url="https://script.stunnel.sbs/pass.txt"
     clear
     echo -e "${BIYellow}========================================${NC}"
     echo -e "${BICyan}        LOGIN MENU - VPS ACCESS${NC}"
@@ -173,7 +173,7 @@ echo ""
 read -p "$( echo -e "${BIWhite}Press ${LIME}[${BIWhite} Enter ${LIME}]${BIWhite} For Starting Installation${NC}") "
 echo ""
 clear
-REPO="https://script.ipserver.my/api/files/"
+REPO="https://script.stunnel.sbs/api/files/"
 curl_with_key() {
     local remote_path="$1"
     local local_path="$2"
@@ -383,7 +383,7 @@ memasang_notifikasi_bot() {
       username="Install Via Password"
       EXPIRE_INFO="<code>Lifetime (Unlimited Days) (Active)</code>"
   else
-      local izinsc="https://script.ipserver.my/api/data/ip"
+      local izinsc="https://script.stunnel.sbs/api/data/ip"
       local IP_DATA_LINE=$(curl -s -H "x-api-key: d92ead44d7ca8202645517e1956442339c2f3263aa425804deaa62d4d0bbd881" "$izinsc" | grep -w "$MYIP" | head -1)
 
       username=$(echo "$IP_DATA_LINE" | awk '{print $2}')
@@ -887,7 +887,7 @@ done
 EOF
 
   chmod +x /usr/local/sbin/network-tune.sh
-  /usr/local/sbin/network-tune.sh
+  /usr/local/sbin/network-tune.sh >/dev/null 2>&1
 
   echo -e "${YELLOW} Membuat systemd service...${NC}"
   cat > /etc/systemd/system/network-tune.service << EOF
@@ -1146,12 +1146,18 @@ function memasang_sshws(){
     print_install "Install Websocket"
     curl_with_key "files/ws-stunnel" "/usr/local/bin/ws-stunnel"
     curl_with_key "config/tun.conf" "/usr/bin/tun.conf"
+    curl_with_key "config/ws" "/usr/local/bin/ws"
     chmod +x /usr/local/bin/ws-stunnel
+    chmod +x /usr/local/bin/ws
     curl_with_key "files/ws-stunnel.service" "/etc/systemd/system/ws-stunnel.service" && chmod +x /etc/systemd/system/ws-stunnel.service
+    curl_with_key "files/ws.service" "/etc/systemd/system/ws.service" && chmod +x /etc/systemd/system/ws.service
     systemctl daemon-reload
     systemctl enable ws-stunnel.service
     systemctl start ws-stunnel.service
     systemctl restart ws-stunnel.service
+    systemctl enable ws.service
+    systemctl start ws.service
+    systemctl restart ws.service
     chmod 644 /usr/bin/tun.conf
     wget -q -O /usr/local/share/xray/geosite.dat "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat" >> /dev/null 2>&1
     wget -q -O /usr/local/share/xray/geoip.dat "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat" >> /dev/null 2>&1
