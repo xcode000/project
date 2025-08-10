@@ -739,6 +739,9 @@ rm -rf /etc/sysctl.conf > /dev/null 2>&1
 curl_with_key "config/sysctl.conf" "/etc/sysctl.conf"
 sysctl -p > /dev/null 2>&1
 ulimit -n 67108864
+echo 'net.ipv4.ip_forward=1' >/etc/sysctl.d/99-openvpn.conf >> /dev/null 2>&1
+echo 'net.ipv6.conf.all.forwarding=1' >>/etc/sysctl.d/99-openvpn.conf >> /dev/null 2>&1
+sysctl --system >> /dev/null 2>&1
 print_success "Done"
 }
 function memasang_vnstat(){
